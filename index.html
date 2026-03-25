@@ -136,14 +136,14 @@
         .inner-stroke { border: 1.5px solid var(--border-color); }
 
         .modal-overlay {
-            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.2); backdrop-filter: blur(4px);
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.3); backdrop-filter: blur(8px);
             display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: all 0.2s;
+            padding: 24px;
         }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal-card { transform: scale(0.9); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .modal-card { transform: scale(0.9); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); width: 100%; max-width: 400px; }
         .modal-overlay.active .modal-card { transform: scale(1); }
 
-        /* AI Loading Overlay */
         #ai-loader {
             position: fixed; inset: 0; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px);
             z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center;
@@ -153,19 +153,27 @@
             border-radius: 30px; animation: pulse 2s infinite ease-in-out; display: flex; align-items: center; justify-content: center; color: white;
         }
         @keyframes pulse { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }
+
+        /* Pantry Progress Bar Styling */
+        .progress-bar {
+            height: 6px; border-radius: 3px; background: #f1f5f9; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; transition: width 0.5s ease;
+        }
     </style>
 </head>
 <body class="select-none overflow-hidden">
 
+    <!-- AI Loader -->
     <div id="ai-loader">
-        <div class="ai-pulse shadow-2xl shadow-blue-200">
-            <i data-lucide="sparkles" class="w-10 h-10"></i>
-        </div>
+        <div class="ai-pulse shadow-2xl shadow-blue-200"><i data-lucide="sparkles" class="w-10 h-10"></i></div>
         <p class="mt-8 text-[11px] font-800 text-blue-600 uppercase tracking-[0.3em]">AI Recognizing & Translating...</p>
     </div>
 
+    <!-- Delete Modal -->
     <div id="delete-modal" class="modal-overlay">
-        <div class="modal-card w-72 bg-white rounded-[2.5rem] p-8 shadow-2xl border border-slate-100">
+        <div class="modal-card bg-white rounded-[2.5rem] p-8 shadow-2xl border border-slate-100 max-w-[300px]">
             <div class="flex flex-col items-center text-center space-y-4">
                 <div class="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-400">
                     <i data-lucide="trash-2" class="w-7 h-7"></i>
@@ -178,6 +186,49 @@
                     <button id="confirm-delete-btn" class="w-full py-4 bg-rose-400 text-white text-[10px] font-800 uppercase tracking-widest rounded-2xl btn-press">Delete</button>
                     <button onclick="closeDeleteModal()" class="w-full py-4 bg-slate-50 text-slate-400 text-[10px] font-800 uppercase tracking-widest rounded-2xl btn-press">Cancel</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal-overlay">
+        <div class="modal-card bg-white rounded-[2.5rem] p-7 shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="label-style text-slate-400">Edit Entry</h3>
+                <button onclick="closeEditModal()" class="text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto hide-scrollbar space-y-5 pr-1">
+                <div class="space-y-2">
+                    <span class="label-style text-slate-300 ml-1">Price (EUR)</span>
+                    <div class="bg-slate-50 p-4 rounded-2xl">
+                        <input type="number" id="edit-amount" step="0.01" class="w-full bg-transparent text-lg font-800 outline-none text-slate-900" oninput="checkForChanges()">
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <span class="label-style text-slate-300 ml-1">Category</span>
+                    <div class="flex gap-2 overflow-x-auto hide-scrollbar pb-1" id="edit-category-list"></div>
+                </div>
+
+                <div class="space-y-2">
+                    <span class="label-style text-slate-300 ml-1">Description</span>
+                    <div class="bg-slate-50 p-4 rounded-2xl">
+                        <input type="text" id="edit-desc" class="w-full bg-transparent text-sm font-700 outline-none text-slate-700" oninput="checkForChanges()">
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center ml-1">
+                        <span class="label-style text-slate-300">Items</span>
+                        <button onclick="addEditStockRow()" class="text-[10px] font-800 text-blue-600 uppercase tracking-widest">Add New</button>
+                    </div>
+                    <div id="edit-stock-container" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <div id="save-edit-container" class="pt-6 hidden">
+                <button onclick="saveEdit()" class="w-full bg-blue-600 text-white h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] shadow-lg shadow-blue-100 btn-press">Save Changes</button>
             </div>
         </div>
     </div>
@@ -196,19 +247,19 @@
         </header>
 
         <main class="flex-1 overflow-y-auto px-6 pb-40 hide-scrollbar relative">
+            <!-- TAB 1: LOG -->
             <div id="tab-log" class="space-y-6 pt-4">
                 <div class="shell-card p-6 space-y-6">
                     <form id="log-form" class="space-y-6" onsubmit="handleLog(event)">
                         <div class="flex items-center justify-between px-1">
                             <span class="label-style text-slate-400">Date</span>
-                            <input type="date" id="log-date" class="text-[11px] font-800 text-blue-600 bg-slate-50 px-3 py-1.5 rounded-lg outline-none border-none">
+                            <input type="date" id="log-date" class="text-[11px] font-800 text-blue-600 bg-slate-50 px-3 py-1.5 rounded-lg outline-none">
                         </div>
 
                         <div class="space-y-1">
                             <div class="flex items-center gap-2 px-1 relative">
                                 <span id="main-symbol" class="text-2xl font-800 text-blue-600">€</span>
                                 <input type="number" id="amount-input" step="0.01" required placeholder="0.00" oninput="calcConversion()" class="w-full bg-transparent text-5xl font-800 outline-none placeholder:text-slate-100 tracking-tighter text-slate-900 pr-12">
-                                
                                 <button type="button" onclick="document.getElementById('ai-camera-input').click()" class="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 btn-press">
                                     <i data-lucide="camera" class="w-5 h-5"></i>
                                 </button>
@@ -228,18 +279,17 @@
 
                         <div class="flex items-center gap-3 pt-2">
                             <button type="button" onclick="addStockRow()" class="w-14 h-14 rounded-2xl border-1.5 border-dashed border-slate-200 flex items-center justify-center text-slate-300 btn-press"><i data-lucide="plus" class="w-6 h-6"></i></button>
-                            <button type="submit" id="save-btn" class="flex-1 bg-blue-600 text-white h-14 rounded-2xl text-[10px] font-800 uppercase tracking-[0.2em] shadow-lg shadow-blue-100 btn-press">Save</button>
+                            <button type="submit" id="save-btn" class="flex-1 bg-blue-600 text-white h-14 rounded-2xl text-[12px] font-900 uppercase tracking-[0.2em] shadow-lg shadow-blue-100 btn-press">Save</button>
                         </div>
                     </form>
                 </div>
                 <div class="space-y-4 pt-4 pb-10">
-                    <div class="flex items-center justify-center px-2">
-                        <h3 class="label-style text-slate-300">Recent</h3>
-                    </div>
+                    <div class="flex items-center justify-center px-2"><h3 class="label-style text-slate-300">Recent</h3></div>
                     <div id="recent-logs" class="space-y-3"></div>
                 </div>
             </div>
 
+            <!-- TAB 2: CALENDAR -->
             <div id="tab-calendar" class="hidden space-y-6 pt-4">
                 <div class="bg-transparent">
                     <div class="flex items-center justify-between px-2 py-4">
@@ -260,7 +310,6 @@
                     </div>
                     <div id="calendar-days" class="calendar-grid"></div>
                 </div>
-
                 <div class="space-y-4 pb-10">
                     <div class="flex items-center justify-between px-2">
                         <h3 id="selected-date-label" class="label-style text-slate-400">Detail</h3>
@@ -270,10 +319,22 @@
                 </div>
             </div>
 
+            <!-- TAB 3: PANTRY (物品箱) -->
+            <div id="tab-pantry" class="hidden space-y-6 pt-4">
+                <div class="flex flex-col px-2 space-y-2">
+                    <h3 class="label-style text-slate-400">My Stock</h3>
+                    <p id="pantry-stats" class="text-[11px] font-700 text-slate-300 uppercase tracking-widest">Total 0 types of items</p>
+                </div>
+                
+                <div id="pantry-list" class="space-y-4 pb-10">
+                    <!-- Items generated by JS -->
+                </div>
+            </div>
+
+            <!-- TAB 4: PROFILE/OTHER (Placeholder) -->
             <div id="tab-other" class="hidden flex flex-col items-center justify-center py-24">
                 <div class="w-20 h-20 border-2 border-slate-100 rounded-[2rem] flex items-center justify-center mb-6"><i data-lucide="circle-dashed" class="w-8 h-8 text-slate-200"></i></div>
-                <h2 class="text-lg font-800 text-slate-900">Coming Soon</h2>
-                <button onclick="showTab('log')" class="mt-8 text-blue-600 text-[10px] font-800 uppercase tracking-widest">Back</button>
+                <h2 class="text-lg font-800 text-slate-900">Settings</h2>
             </div>
         </main>
 
@@ -283,8 +344,8 @@
             <nav class="glass-nav h-16 w-[calc(100%-3rem)] max-w-[calc(448px-3rem)] rounded-[24px] flex items-center justify-around px-2 pointer-events-auto">
                 <button id="nav-log" onclick="showTab('log')" class="p-3 text-blue-600 btn-press"><i data-lucide="plus" class="w-5 h-5"></i></button>
                 <button id="nav-calendar" onclick="showTab('calendar')" class="p-3 text-slate-400 btn-press"><i data-lucide="calendar-days" class="w-5 h-5"></i></button>
-                <button id="nav-other" onclick="showLocked()" class="p-3 text-slate-400 btn-press"><i data-lucide="compass" class="w-5 h-5"></i></button>
-                <button onclick="showLocked()" class="p-3 text-slate-400 btn-press"><i data-lucide="user-round" class="w-5 h-5"></i></button>
+                <button id="nav-pantry" onclick="showTab('pantry')" class="p-3 text-slate-400 btn-press"><i data-lucide="box" class="w-5 h-5"></i></button>
+                <button id="nav-other" onclick="showTab('other')" class="p-3 text-slate-400 btn-press"><i data-lucide="user-round" class="w-5 h-5"></i></button>
             </nav>
         </div>
     </div>
@@ -293,6 +354,7 @@
         const CONFIG = {
             rate: 7.82,
             storageKey: 'pj_logs_v4',
+            pantryKey: 'pj_pantry_v1',
             categories: [
                 { id: 'food', name: 'Food', colorClass: 'bg-food', textClass: 'color-food', hex: '#B2C9AB', icon: 'utensils' },
                 { id: 'traffic', name: 'Traffic', colorClass: 'bg-traffic', textClass: 'color-traffic', hex: '#92A8D1', icon: 'car' },
@@ -304,51 +366,52 @@
             ]
         };
 
-        const apiKey = ""; // Insert your key here
+        const apiKey = ""; 
 
         let state = {
             currency: localStorage.getItem('pj_curr') || 'EUR',
             selectedCategory: localStorage.getItem('pj_last_cat') || 'Food',
             logs: JSON.parse(localStorage.getItem(CONFIG.storageKey) || '[]'),
+            pantry: JSON.parse(localStorage.getItem(CONFIG.pantryKey) || '[]'),
             currentDate: new Date(),
             selectedDate: new Date(),
-            pendingDeleteId: null
+            pendingDeleteId: null,
+            editingEntry: null,
+            originalEntryJson: null,
+            expandedLogs: new Set()
         };
 
         function saveToStorage() {
             localStorage.setItem(CONFIG.storageKey, JSON.stringify(state.logs));
+            localStorage.setItem(CONFIG.pantryKey, JSON.stringify(state.pantry));
             localStorage.setItem('pj_curr', state.currency);
             localStorage.setItem('pj_last_cat', state.selectedCategory);
         }
 
         function initFormDate() {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('log-date').value = today;
+            document.getElementById('log-date').value = new Date().toISOString().split('T')[0];
         }
 
         function showTab(tab) {
             document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('[id^="nav-"]').forEach(el => el.classList.replace('text-blue-600', 'text-slate-400'));
             document.getElementById(`tab-${tab}`).classList.remove('hidden');
-            document.getElementById('main-title').innerText = tab === 'log' ? 'Log' : 'View';
+            
+            const titleMap = { 'log': 'Log', 'calendar': 'View', 'pantry': 'Box', 'other': 'More' };
+            document.getElementById('main-title').innerText = titleMap[tab] || 'Matti';
+            
             const navBtn = document.getElementById(`nav-${tab}`);
             if (navBtn) navBtn.classList.replace('text-slate-400', 'text-blue-600');
+            
             if(tab === 'calendar') renderCalendar();
-        }
-
-        function showLocked() {
-            document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('[id^="nav-"]').forEach(el => el.classList.replace('text-blue-600', 'text-slate-400'));
-            document.getElementById('nav-other').classList.replace('text-slate-400', 'text-blue-600');
-            document.getElementById('tab-other').classList.remove('hidden');
-            document.getElementById('main-title').innerText = 'Explore';
+            if(tab === 'pantry') renderPantry();
         }
 
         function setCurrency(curr) {
             state.currency = curr;
             saveToStorage();
-            document.getElementById('curr-EUR').className = curr === 'EUR' ? "px-4 py-2 rounded-xl text-[10px] font-800 transition-all bg-white text-blue-600 shadow-sm" : "px-4 py-2 rounded-xl text-[10px] font-800 transition-all text-slate-400";
-            document.getElementById('curr-CNY').className = curr === 'CNY' ? "px-4 py-2 rounded-xl text-[10px] font-800 transition-all bg-white text-blue-600 shadow-sm" : "px-4 py-2 rounded-xl text-[10px] font-800 transition-all text-slate-400";
+            document.getElementById('curr-EUR').className = curr === 'EUR' ? "px-4 py-2 rounded-xl text-[10px] font-800 bg-white text-blue-600 shadow-sm" : "px-4 py-2 rounded-xl text-[10px] font-800 text-slate-400";
+            document.getElementById('curr-CNY').className = curr === 'CNY' ? "px-4 py-2 rounded-xl text-[10px] font-800 bg-white text-blue-600 shadow-sm" : "px-4 py-2 rounded-xl text-[10px] font-800 text-slate-400";
             document.getElementById('main-symbol').innerText = curr === 'EUR' ? '€' : '¥';
             calcConversion();
         }
@@ -356,11 +419,10 @@
         function calcConversion() {
             const val = parseFloat(document.getElementById('amount-input').value) || 0;
             const display = document.getElementById('conversion-display');
-            const convVal = document.getElementById('conv-val');
             if(val > 0) {
                 display.classList.replace('opacity-0', 'opacity-100');
                 const result = state.currency === 'EUR' ? (val * CONFIG.rate) : (val / CONFIG.rate);
-                convVal.innerText = `${state.currency === 'EUR' ? '¥' : '€'} ${result.toFixed(2)}`;
+                document.getElementById('conv-val').innerText = `${state.currency === 'EUR' ? '¥' : '€'} ${result.toFixed(2)}`;
             } else display.classList.replace('opacity-100', 'opacity-0');
         }
 
@@ -368,141 +430,92 @@
             const list = document.getElementById('category-list');
             list.innerHTML = CONFIG.categories.map(cat => {
                 const isActive = state.selectedCategory === cat.name;
-                const activeClass = isActive ? cat.colorClass : '';
-                return `<button type="button" onclick="selectCat('${cat.name}')" class="category-pill shrink-0 px-5 py-2 rounded-2xl ${activeClass}">${cat.name}</button>`;
+                return `<button type="button" onclick="selectCat('${cat.name}')" class="category-pill shrink-0 px-5 py-2 rounded-2xl ${isActive ? cat.colorClass : ''}">${cat.name}</button>`;
             }).join('');
         }
 
-        function selectCat(cat) { 
-            state.selectedCategory = cat; 
-            saveToStorage();
-            renderCategories(); 
-        }
+        function selectCat(cat) { state.selectedCategory = cat; saveToStorage(); renderCategories(); }
 
         function addStockRow(name = '', qty = '') {
-            const container = document.getElementById('stock-container');
             const div = document.createElement('div');
             div.className = "flex gap-2 items-center bg-transparent p-3 rounded-2xl inner-stroke item-row";
             div.innerHTML = `
-                <input type="text" placeholder="e.g. Eggs" required value="${name}" class="item-name flex-1 bg-transparent text-xs font-700 outline-none px-1 text-slate-700 placeholder:text-slate-300">
-                <input type="text" placeholder="1" value="${qty}" class="item-qty w-16 bg-transparent text-xs font-800 outline-none text-right px-1 border-l border-slate-100">
-                <button type="button" onclick="this.parentElement.remove()" class="text-slate-300 hover:text-rose-400 pl-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+                <input type="text" placeholder="e.g. Eggs" required value="${name}" class="item-name flex-1 bg-transparent text-xs font-700 outline-none px-1 text-slate-700">
+                <input type="text" placeholder="1" value="${qty}" class="item-qty w-16 bg-transparent text-xs font-800 outline-none text-right px-1 border-l">
+                <button type="button" onclick="this.parentElement.remove()" class="text-slate-300 pl-1"><i data-lucide="x" class="w-4 h-4"></i></button>
             `;
-            container.appendChild(div); 
+            document.getElementById('stock-container').appendChild(div); 
             lucide.createIcons();
         }
 
-        // --- AI LOGIC WITH AUTO-TRANSLATION ---
+        // AI Recognition
         async function processImage(input) {
-            if (!input.files || !input.files[0]) return;
-            const file = input.files[0];
+            if (!input.files[0]) return;
             const reader = new FileReader();
-            
             document.getElementById('ai-loader').style.display = 'flex';
-            
             reader.onload = async (e) => {
                 const base64Data = e.target.result.split(',')[1];
                 try {
-                    const result = await callGeminiAI(base64Data);
-                    fillFormWithAI(result);
-                } catch (err) {
-                    console.error("AI Error:", err);
-                    alert("Recognition failed: " + err.message);
-                } finally {
-                    document.getElementById('ai-loader').style.display = 'none';
-                    input.value = ""; 
-                }
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: "Analyze receipt, translate description and items to English, return JSON: {total_amount, description, category, items:[{name, qty}]}" }, { inlineData: { mimeType: "image/png", data: base64Data } }] }],
+                            generationConfig: { responseMimeType: "application/json" }
+                        })
+                    });
+                    const data = await res.json();
+                    const result = JSON.parse(data.candidates[0].content.parts[0].text);
+                    if (result.total_amount) { document.getElementById('amount-input').value = result.total_amount; calcConversion(); }
+                    if (result.description) document.getElementById('desc-input').value = result.description;
+                    if (result.category) { const found = CONFIG.categories.find(c => c.name.toLowerCase() === result.category.toLowerCase()); if (found) selectCat(found.name); }
+                    if (result.items) { document.getElementById('stock-container').innerHTML = ''; result.items.forEach(i => addStockRow(i.name, i.qty)); }
+                } catch (err) { console.error(err); }
+                finally { document.getElementById('ai-loader').style.display = 'none'; input.value = ""; }
             };
-            reader.readAsDataURL(file);
-        }
-
-        async function callGeminiAI(base64Image) {
-            const prompt = `You are a professional receipt analysis assistant. Analyze this receipt image and extract:
-            1. total_amount: Final amount (numerical).
-            2. description: Merchant name.
-            3. category: Pick one (Food, Traffic, Shop, Social, Life, Work, Other).
-            4. items: List with 'name' and 'qty'.
-            
-            CRITICAL: If the receipt is not in English, you MUST translate the 'description' and all 'items[].name' into English.
-            
-            Return ONLY a valid JSON:
-            {
-              "total_amount": 0.00,
-              "description": "Translated Name",
-              "category": "Shop",
-              "items": [{"name": "Translated Item", "qty": "1"}]
-            }`;
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-            
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [
-                            { text: prompt },
-                            { inlineData: { mimeType: "image/png", data: base64Image } }
-                        ]
-                    }],
-                    generationConfig: { responseMimeType: "application/json" }
-                })
-            });
-            const data = await response.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!text) throw new Error("AI returned empty content");
-            
-            // Clean JSON string
-            const cleanJson = text.replace(/```json/g, "").replace(/```/g, "").trim();
-            return JSON.parse(cleanJson);
-        }
-
-        function fillFormWithAI(data) {
-            if (!data) return;
-            if (data.total_amount) {
-                document.getElementById('amount-input').value = data.total_amount;
-                calcConversion();
-            }
-            if (data.description) {
-                document.getElementById('desc-input').value = data.description;
-            }
-            if (data.category) {
-                const found = CONFIG.categories.find(c => c.name.toLowerCase() === data.category.toLowerCase());
-                if (found) selectCat(found.name);
-            }
-            if (data.items && data.items.length > 0) {
-                document.getElementById('stock-container').innerHTML = '';
-                data.items.forEach(item => {
-                    addStockRow(item.name, item.qty);
-                });
-            }
+            reader.readAsDataURL(input.files[0]);
         }
 
         function handleLog(e) {
             e.preventDefault();
             const val = parseFloat(document.getElementById('amount-input').value);
             if(!val) return;
-            
-            const itemRows = document.querySelectorAll('.item-row');
-            const items = Array.from(itemRows).map(row => ({
+            const items = Array.from(document.querySelectorAll('#log-form .item-row')).map(row => ({
                 name: row.querySelector('.item-name').value,
                 qty: row.querySelector('.item-qty').value
             })).filter(i => i.name.trim() !== '');
-
-            const logDate = document.getElementById('log-date').value;
-            const newEntry = {
+            
+            const entry = {
                 id: Date.now(),
                 eurVal: state.currency === 'CNY' ? (val / CONFIG.rate) : val,
                 category: state.selectedCategory,
                 description: document.getElementById('desc-input').value,
                 items: items,
                 time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                dateString: logDate
+                dateString: document.getElementById('log-date').value
             };
             
-            state.logs.unshift(newEntry);
+            state.logs.unshift(entry);
+
+            // Update Pantry
+            items.forEach(item => {
+                const qtyVal = parseFloat(item.qty) || 1;
+                const existing = state.pantry.find(p => p.name.toLowerCase() === item.name.toLowerCase());
+                if(existing) {
+                    existing.qty += qtyVal;
+                    existing.max = Math.max(existing.max, existing.qty);
+                } else {
+                    state.pantry.push({
+                        name: item.name,
+                        qty: qtyVal,
+                        max: qtyVal,
+                        category: entry.category
+                    });
+                }
+            });
+
             saveToStorage();
-            
             document.getElementById('amount-input').value = '';
             document.getElementById('desc-input').value = '';
             document.getElementById('stock-container').innerHTML = '';
@@ -510,186 +523,221 @@
             renderRecent();
         }
 
-        let startX = 0;
-        function setupSwipe(el) {
-            const content = el.querySelector('.swipe-content');
-            el.addEventListener('touchstart', e => { 
-                startX = e.touches[0].clientX; 
-                content.style.transition = 'none'; 
-            }, {passive: true});
+        // --- PANTRY Logic ---
+
+        function renderPantry() {
+            const list = document.getElementById('pantry-list');
+            const stats = document.getElementById('pantry-stats');
             
-            el.addEventListener('touchmove', e => {
-                let diff = startX - e.touches[0].clientX;
-                if (diff > 0 && diff < 120) {
-                    content.style.transform = `translateX(-${diff}px)`;
-                } else if (diff <= 0) {
-                    content.style.transform = `translateX(0)`;
-                }
-            }, {passive: true});
-            
-            el.addEventListener('touchend', e => {
-                content.style.transition = 'all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
-                let diff = startX - e.changedTouches[0].clientX;
-                if (diff > 50) {
-                    content.style.transform = `translateX(-80px)`;
-                } else {
-                    content.style.transform = `translateX(0)`;
-                }
-            });
-        }
-
-        function openDeleteModal(id) {
-            state.pendingDeleteId = id;
-            document.getElementById('delete-modal').classList.add('active');
-        }
-
-        function closeDeleteModal() {
-            document.getElementById('delete-modal').classList.remove('active');
-            state.pendingDeleteId = null;
-            renderRecent();
-            if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar();
-        }
-
-        document.getElementById('confirm-delete-btn').onclick = () => {
-            if (state.pendingDeleteId) {
-                state.logs = state.logs.filter(l => l.id !== state.pendingDeleteId);
-                saveToStorage();
-                closeDeleteModal();
+            if (state.pantry.length === 0) {
+                list.innerHTML = `<div class="py-20 text-center text-slate-200 label-style italic">Box is empty</div>`;
+                stats.innerText = "Total 0 types of items";
+                return;
             }
-        };
 
-        function renderRecent() {
-            const list = document.getElementById('recent-logs');
-            const sortedLogs = [...state.logs].sort((a, b) => b.id - a.id);
+            stats.innerText = `Total ${state.pantry.length} types of items`;
             
-            list.innerHTML = sortedLogs.slice(0, 5).map(log => {
-                const catInfo = CONFIG.categories.find(c => c.name === log.category) || CONFIG.categories[6];
-                const hasItems = log.items && log.items.length > 0;
+            list.innerHTML = state.pantry.map((item, index) => {
+                const progress = Math.min(100, (item.qty / item.max) * 100);
+                const cat = CONFIG.categories.find(c => c.name === item.category) || CONFIG.categories[6];
+                
                 return `
-                <div class="swipe-container inner-stroke" data-id="${log.id}">
-                    <div class="swipe-action" onclick="openDeleteModal(${log.id})"><i data-lucide="trash-2" class="w-5 h-5"></i></div>
-                    <div class="swipe-content p-5 flex justify-between items-center">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-xl border border-slate-50 flex items-center justify-center ${catInfo.textClass}">
-                                <i data-lucide="${catInfo.icon}" class="w-5 h-5"></i>
+                <div class="shell-card p-5 space-y-4">
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-xl border border-slate-50 flex items-center justify-center ${cat.textClass} bg-slate-50/50">
+                                <i data-lucide="${cat.icon}" class="w-4 h-4"></i>
                             </div>
                             <div>
-                                <p class="text-sm font-700 text-slate-800 flex items-center gap-1.5">
-                                    ${log.description || log.category}
-                                    ${hasItems ? '<i data-lucide="layers" class="w-3 h-3 text-slate-300"></i>' : ''}
-                                </p>
-                                <p class="label-style">
-                                    <span class="${catInfo.textClass}">${log.category}</span>
-                                    <span class="text-slate-300 mx-1">•</span>
-                                    <span class="text-slate-300">${log.dateString}</span>
-                                </p>
+                                <h4 class="text-sm font-800 text-slate-900">${item.name}</h4>
+                                <p class="text-[9px] font-800 text-slate-300 uppercase tracking-widest">${item.category}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-50 rounded-xl p-1">
+                            <button onclick="updatePantryQty(${index}, -1)" class="w-8 h-8 flex items-center justify-center text-slate-400 btn-press"><i data-lucide="minus" class="w-4 h-4"></i></button>
+                            <span class="text-xs font-800 text-slate-900 w-6 text-center">${item.qty}</span>
+                            <button onclick="updatePantryQty(${index}, 1)" class="w-8 h-8 flex items-center justify-center text-blue-600 btn-press"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="progress-bar">
+                            <div class="progress-fill ${cat.colorClass}" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="flex justify-between text-[8px] font-800 text-slate-300 uppercase tracking-widest">
+                            <span>Left: ${item.qty}</span>
+                            <span>Stock: ${item.max}</span>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function updatePantryQty(index, delta) {
+            state.pantry[index].qty += delta;
+            if (state.pantry[index].qty <= 0) {
+                state.pantry.splice(index, 1);
+            } else if (state.pantry[index].qty > state.pantry[index].max) {
+                state.pantry[index].max = state.pantry[index].qty;
+            }
+            saveToStorage();
+            renderPantry();
+        }
+
+        // --- Edit Modal Logic (Same as before) ---
+
+        function openEdit(id) {
+            const entry = state.logs.find(l => l.id === id);
+            if(!entry) return;
+            state.editingEntry = JSON.parse(JSON.stringify(entry));
+            state.originalEntryJson = JSON.stringify(state.editingEntry);
+            
+            document.getElementById('edit-amount').value = state.editingEntry.eurVal.toFixed(2);
+            document.getElementById('edit-desc').value = state.editingEntry.description;
+            
+            renderEditCategories();
+            renderEditItems();
+            checkForChanges();
+            document.getElementById('edit-modal').classList.add('active');
+        }
+
+        function renderEditCategories() {
+            document.getElementById('edit-category-list').innerHTML = CONFIG.categories.map(cat => {
+                const isActive = state.editingEntry.category === cat.name;
+                return `<button onclick="state.editingEntry.category='${cat.name}'; renderEditCategories(); checkForChanges()" class="category-pill shrink-0 px-5 py-2 rounded-2xl ${isActive ? cat.colorClass : ''}">${cat.name}</button>`;
+            }).join('');
+        }
+
+        function renderEditItems() {
+            const container = document.getElementById('edit-stock-container');
+            container.innerHTML = state.editingEntry.items.map((item, idx) => `
+                <div class="flex gap-2 items-center bg-slate-50 p-3 rounded-2xl">
+                    <input type="text" value="${item.name}" oninput="state.editingEntry.items[${idx}].name=this.value; checkForChanges()" class="flex-1 bg-transparent text-xs font-700 outline-none px-1 text-slate-700">
+                    <input type="text" value="${item.qty}" oninput="state.editingEntry.items[${idx}].qty=this.value; checkForChanges()" class="w-16 bg-transparent text-xs font-800 outline-none text-right px-1 border-l border-slate-200">
+                    <button onclick="state.editingEntry.items.splice(${idx},1); renderEditItems(); checkForChanges()" class="text-rose-300 pl-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function addEditStockRow() {
+            state.editingEntry.items.push({name: '', qty: '1'});
+            renderEditItems();
+            checkForChanges();
+        }
+
+        function checkForChanges() {
+            const currentAmount = parseFloat(document.getElementById('edit-amount').value) || 0;
+            const currentDesc = document.getElementById('edit-desc').value;
+            const currentObj = { ...state.editingEntry, eurVal: currentAmount, description: currentDesc };
+            const isDifferent = JSON.stringify(currentObj) !== state.originalEntryJson;
+            const container = document.getElementById('save-edit-container');
+            if (isDifferent) container.classList.remove('hidden'); else container.classList.add('hidden');
+        }
+
+        function saveEdit() {
+            state.editingEntry.eurVal = parseFloat(document.getElementById('edit-amount').value) || 0;
+            state.editingEntry.description = document.getElementById('edit-desc').value;
+            const idx = state.logs.findIndex(l => l.id === state.editingEntry.id);
+            if(idx !== -1) {
+                state.logs[idx] = JSON.parse(JSON.stringify(state.editingEntry));
+                saveToStorage();
+                closeEditModal();
+                renderRecent();
+                if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar();
+            }
+        }
+
+        function closeEditModal() { document.getElementById('edit-modal').classList.remove('active'); state.editingEntry = null; state.originalEntryJson = null; }
+
+        // --- Global Rendering Helpers ---
+
+        function createLogItemHTML(log) {
+            const cat = CONFIG.categories.find(c => c.name === log.category) || CONFIG.categories[6];
+            const isExp = state.expandedLogs.has(log.id);
+            const items = isExp ? log.items : log.items.slice(0, 2);
+            return `
+            <div class="swipe-container inner-stroke" data-id="${log.id}">
+                <div class="swipe-action" onclick="event.stopPropagation(); openDeleteModal(${log.id})"><i data-lucide="trash-2" class="w-5 h-5"></i></div>
+                <div class="swipe-content p-5" onclick="openEdit(${log.id})">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl border border-slate-50 flex items-center justify-center ${cat.textClass}"><i data-lucide="${cat.icon}" class="w-5 h-5"></i></div>
+                            <div>
+                                <p class="text-sm font-700 text-slate-800">${log.description || log.category}</p>
+                                <p class="label-style"><span class="${cat.textClass}">${log.category}</span><span class="text-slate-300 mx-1">•</span><span class="text-slate-300">${log.time}</span></p>
                             </div>
                         </div>
                         <p class="text-sm font-800 text-slate-900">€${log.eurVal.toFixed(2)}</p>
                     </div>
+                    ${log.items.length > 0 ? `
+                    <div class="mt-4 pt-4 border-t border-slate-50 space-y-2">
+                        ${items.map(i => `<div class="flex justify-between text-[10px] font-600 text-slate-400"><span>${i.name}</span><span class="font-800 text-slate-500">${i.qty}</span></div>`).join('')}
+                        ${log.items.length > 2 ? `<button onclick="event.stopPropagation(); if(state.expandedLogs.has(${log.id})) state.expandedLogs.delete(${log.id}); else state.expandedLogs.add(${log.id}); renderRecent(); if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderDayDetail()" class="w-full text-center text-[11px] font-900 text-blue-500 uppercase tracking-widest pt-1">${isExp ? 'Show Less' : `Show ${log.items.length - 2} More`}</button>` : ''}
+                    </div>` : ''}
                 </div>
-            `}).join('') || '<div class="py-8 text-center text-slate-200 label-style">No History</div>';
-            
+            </div>`;
+        }
+
+        let startX = 0;
+        function setupSwipe(el) {
+            const content = el.querySelector('.swipe-content');
+            el.addEventListener('touchstart', e => { startX = e.touches[0].clientX; content.style.transition = 'none'; }, {passive: true});
+            el.addEventListener('touchmove', e => {
+                let diff = startX - e.touches[0].clientX;
+                if (diff > 0 && diff < 120) content.style.transform = `translateX(-${diff}px)`;
+                else if (diff <= 0) content.style.transform = `translateX(0)`;
+            }, {passive: true});
+            el.addEventListener('touchend', e => {
+                content.style.transition = 'all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
+                let diff = startX - e.changedTouches[0].clientX;
+                content.style.transform = diff > 50 ? `translateX(-80px)` : `translateX(0)`;
+            });
+        }
+
+        function openDeleteModal(id) { state.pendingDeleteId = id; document.getElementById('delete-modal').classList.add('active'); }
+        function closeDeleteModal() { document.getElementById('delete-modal').classList.remove('active'); }
+        document.getElementById('confirm-delete-btn').onclick = () => { if (state.pendingDeleteId) { state.logs = state.logs.filter(l => l.id !== state.pendingDeleteId); saveToStorage(); closeDeleteModal(); renderRecent(); if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar(); } };
+
+        function renderRecent() {
+            const list = document.getElementById('recent-logs');
+            list.innerHTML = state.logs.sort((a,b)=>b.id-a.id).slice(0, 5).map(createLogItemHTML).join('') || '<div class="py-8 text-center text-slate-200 label-style">No History</div>';
             document.querySelectorAll('#recent-logs .swipe-container').forEach(setupSwipe);
             lucide.createIcons();
         }
 
         function renderCalendar() {
-            const calDays = document.getElementById('calendar-days');
-            const monthLabel = document.getElementById('current-month-label');
-            const year = state.currentDate.getFullYear();
-            const month = state.currentDate.getMonth();
-            const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-            
-            monthLabel.innerText = `${months[month]} ${year}`;
-            
-            const firstDay = new Date(year, month, 1).getDay();
-            const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            
-            calDays.innerHTML = '';
-            for(let i=0; i<adjustedFirstDay; i++) {
-                calDays.innerHTML += `<div class="day-cell opacity-20"></div>`;
-            }
-
-            for(let d=1; d<=daysInMonth; d++) {
-                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                const dailyLogs = state.logs.filter(l => l.dateString === dateStr);
-                const isToday = new Date().toDateString() === new Date(year, month, d).toDateString();
-                const isSelected = state.selectedDate.toDateString() === new Date(year, month, d).toDateString();
-                
-                let dots = '';
-                if(dailyLogs.length > 0) {
-                    const uniqueCats = [...new Set(dailyLogs.map(l => l.category))].slice(0, 3);
-                    dots = `<div class="dots-container">${uniqueCats.map(c => {
-                        const info = CONFIG.categories.find(cat => cat.name === c);
-                        return `<div class="dot" style="background:${info?.hex || '#ccc'}"></div>`;
-                    }).join('')}</div>`;
-                }
-
-                calDays.innerHTML += `
-                    <div onclick="selectDate(${year}, ${month}, ${d})" class="day-cell ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''} ${dailyLogs.length > 0 ? 'has-items' : ''}">
-                        <span class="text-xs font-800">${d}</span>
-                        ${dots}
-                    </div>
-                `;
+            const cal = document.getElementById('calendar-days');
+            const y = state.currentDate.getFullYear(), m = state.currentDate.getMonth();
+            document.getElementById('current-month-label').innerText = `${new Intl.DateTimeFormat('en-US',{month:'long'}).format(state.currentDate)} ${y}`;
+            const first = (new Date(y, m, 1).getDay() + 6) % 7, days = new Date(y, m+1, 0).getDate();
+            cal.innerHTML = '';
+            for(let i=0; i<first; i++) cal.innerHTML += `<div class="day-cell opacity-20"></div>`;
+            for(let d=1; d<=days; d++) {
+                const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const dl = state.logs.filter(l => l.dateString === ds);
+                const isSel = state.selectedDate.toDateString() === new Date(y,m,d).toDateString();
+                const dots = dl.length ? `<div class="dots-container">${[...new Set(dl.map(l=>l.category))].slice(0,3).map(c=>`<div class="dot" style="background:${CONFIG.categories.find(cat=>cat.name===c)?.hex}"></div>`).join('')}</div>` : '';
+                cal.innerHTML += `<div onclick="state.selectedDate=new Date(${y},${m},${d}); renderCalendar()" class="day-cell ${isSel?'selected':''} ${dl.length?'has-items':''}"><span class="text-xs font-800">${d}</span>${dots}</div>`;
             }
             renderDayDetail();
         }
 
-        function selectDate(y, m, d) {
-            state.selectedDate = new Date(y, m, d);
-            renderCalendar();
-        }
-
         function renderDayDetail() {
-            const label = document.getElementById('selected-date-label');
-            const total = document.getElementById('selected-day-total');
-            const list = document.getElementById('day-detail-list');
-            
-            const dateStr = state.selectedDate.toISOString().split('T')[0];
-            const dailyLogs = state.logs.filter(l => l.dateString === dateStr);
-            const sum = dailyLogs.reduce((a, b) => a + b.eurVal, 0);
-
-            label.innerText = state.selectedDate.toLocaleDateString('en-US', {month: 'long', day: 'numeric'});
-            total.innerText = `€ ${sum.toFixed(2)}`;
-            
-            list.innerHTML = dailyLogs.map(log => {
-                const catInfo = CONFIG.categories.find(c => c.name === log.category) || CONFIG.categories[6];
-                return `
-                <div class="p-4 bg-white rounded-2xl inner-stroke flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg flex items-center justify-center ${catInfo.textClass}">
-                            <i data-lucide="${catInfo.icon}" class="w-4 h-4"></i>
-                        </div>
-                        <div>
-                            <p class="text-[11px] font-800 text-slate-800">${log.description || log.category}</p>
-                            <p class="text-[9px] font-700 text-slate-300 uppercase">${log.time}</p>
-                        </div>
-                    </div>
-                    <p class="text-[11px] font-800 text-slate-900">€${log.eurVal.toFixed(2)}</p>
-                </div>
-                `;
-            }).join('') || '<div class="py-8 text-center text-slate-200 label-style">No records</div>';
+            const ds = state.selectedDate.toISOString().split('T')[0];
+            const dl = state.logs.filter(l => l.dateString === ds);
+            document.getElementById('selected-date-label').innerText = state.selectedDate.toLocaleDateString('en-US', {month:'long', day:'numeric'});
+            document.getElementById('selected-day-total').innerText = `€ ${dl.reduce((a,b)=>a+b.eurVal,0).toFixed(2)}`;
+            document.getElementById('day-detail-list').innerHTML = dl.map(createLogItemHTML).join('') || '<div class="py-8 text-center text-slate-200 label-style">No records</div>';
+            document.querySelectorAll('#day-detail-list .swipe-container').forEach(setupSwipe);
             lucide.createIcons();
         }
 
-        document.getElementById('month-prev').onclick = () => {
-            state.currentDate.setMonth(state.currentDate.getMonth() - 1);
-            renderCalendar();
-        };
-        document.getElementById('month-next').onclick = () => {
-            state.currentDate.setMonth(state.currentDate.getMonth() + 1);
-            renderCalendar();
-        };
+        document.getElementById('month-prev').onclick = () => { state.currentDate.setMonth(m => m-1); renderCalendar(); };
+        document.getElementById('month-next').onclick = () => { state.currentDate.setMonth(m => m+1); renderCalendar(); };
 
-        window.onload = () => {
-            initFormDate();
-            renderCategories();
-            renderRecent();
-            setCurrency(state.currency);
-            lucide.createIcons();
-        };
+        window.onload = () => { initFormDate(); renderCategories(); renderRecent(); setCurrency(state.currency); lucide.createIcons(); };
     </script>
 </body>
 </html>
