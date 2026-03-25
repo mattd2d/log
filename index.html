@@ -15,6 +15,7 @@
             --shell-accent: #2563eb;
             --shell-text: #0f172a;
             --border-color: #e2e8f0;
+            --delete-red: #ef4444; /* 统一的红色 */
         }
 
         .color-food { color: #B2C9AB !important; }
@@ -49,12 +50,19 @@
             letter-spacing: 0.15em; 
         }
 
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 8px;
+        }
+
         .swipe-container {
             position: relative;
             overflow: hidden;
             border-radius: 2rem;
             transition: all 0.3s ease;
-            background: #fda4af; 
+            background: var(--delete-red); /* 背景纯红 */
         }
         .swipe-content {
             position: relative;
@@ -68,7 +76,7 @@
             top: 0;
             bottom: 0;
             width: 80px;
-            background: #fda4af;
+            background: var(--delete-red);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -154,28 +162,33 @@
         }
         @keyframes pulse { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }
 
-        /* Pantry Progress Bar Styling */
         .progress-bar {
             height: 6px; border-radius: 3px; background: #f1f5f9; overflow: hidden;
         }
         .progress-fill {
             height: 100%; transition: width 0.5s ease;
         }
+
+        .color-dot-choice { width: 36px; height: 36px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: all 0.2s; }
+        .color-dot-choice.selected { border-color: #3b82f6; transform: scale(1.1); box-shadow: 0 0 0 2px white inset; }
+        .icon-box-choice { aspect-ratio: 1/1; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: #f8fafc; color: #cbd5e1; border: 2px solid transparent; transition: all 0.2s; }
+        .icon-box-choice.selected { background: #eff6ff; color: #3b82f6; border-color: #3b82f6; }
+        
+        /* 关键修复：让 Used Up 的灰色和透明感只作用于内容，而不影响底色 */
+        .used-up-dim { opacity: 0.45; filter: grayscale(1); }
     </style>
 </head>
 <body class="select-none overflow-hidden">
 
-    <!-- AI Loader -->
     <div id="ai-loader">
         <div class="ai-pulse shadow-2xl shadow-blue-200"><i data-lucide="sparkles" class="w-10 h-10"></i></div>
         <p class="mt-8 text-[11px] font-800 text-blue-600 uppercase tracking-[0.3em]">AI Recognizing & Translating...</p>
     </div>
 
-    <!-- Delete Modal -->
     <div id="delete-modal" class="modal-overlay">
         <div class="modal-card bg-white rounded-[2.5rem] p-8 shadow-2xl border border-slate-100 max-w-[300px]">
             <div class="flex flex-col items-center text-center space-y-4">
-                <div class="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-400">
+                <div class="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500">
                     <i data-lucide="trash-2" class="w-7 h-7"></i>
                 </div>
                 <div>
@@ -183,14 +196,13 @@
                     <p class="text-slate-400 text-xs font-600 mt-1 leading-relaxed">This record will be permanently removed.</p>
                 </div>
                 <div class="flex flex-col w-full gap-2 pt-2">
-                    <button id="confirm-delete-btn" class="w-full py-4 bg-rose-400 text-white text-[10px] font-800 uppercase tracking-widest rounded-2xl btn-press">Delete</button>
+                    <button id="confirm-delete-btn" class="w-full py-4 bg-[#ef4444] text-white text-[10px] font-800 uppercase tracking-widest rounded-2xl btn-press">Delete</button>
                     <button onclick="closeDeleteModal()" class="w-full py-4 bg-slate-50 text-slate-400 text-[10px] font-800 uppercase tracking-widest rounded-2xl btn-press">Cancel</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Edit Modal -->
     <div id="edit-modal" class="modal-overlay">
         <div class="modal-card bg-white rounded-[2.5rem] p-7 shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
             <div class="flex justify-between items-center mb-6">
@@ -227,8 +239,57 @@
                 </div>
             </div>
 
-            <div id="save-edit-container" class="pt-6 hidden">
-                <button onclick="saveEdit()" class="w-full bg-blue-600 text-white h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] shadow-lg shadow-blue-100 btn-press">Save Changes</button>
+            <div class="pt-6 flex gap-3">
+                <button onclick="openDeleteModal(state.editingEntry.id); closeEditModal();" class="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center btn-press">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                </button>
+                <button id="save-edit-btn" onclick="saveEdit()" class="flex-1 bg-slate-100 text-slate-400 h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="pantry-edit-modal" class="modal-overlay">
+        <div class="modal-card bg-white rounded-[2.5rem] p-7 shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="label-style text-slate-400">Item Settings</h3>
+                <button onclick="closePantryEdit()" class="text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto hide-scrollbar space-y-6 pr-1">
+                <div class="space-y-3">
+                    <span class="label-style text-slate-300 ml-1">Icon</span>
+                    <div class="grid grid-cols-6 gap-2" id="pantry-icon-grid"></div>
+                </div>
+
+                <div class="space-y-3">
+                    <span class="label-style text-slate-300 ml-1">Color</span>
+                    <div class="grid grid-cols-6 gap-2" id="pantry-color-grid"></div>
+                </div>
+
+                <div class="space-y-2">
+                    <span class="label-style text-slate-300 ml-1">Item Name</span>
+                    <div class="bg-slate-50 p-4 rounded-2xl">
+                        <input type="text" id="pantry-edit-name" class="w-full bg-transparent text-sm font-700 outline-none text-slate-700" oninput="checkPantryChanges()">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <span class="label-style text-slate-300 ml-1">Remaining</span>
+                        <div class="bg-slate-50 p-4 rounded-2xl"><input type="number" id="pantry-edit-qty" class="w-full bg-transparent text-sm font-800 outline-none text-slate-900" oninput="checkPantryChanges()"></div>
+                    </div>
+                    <div class="space-y-2">
+                        <span class="label-style text-slate-300 ml-1">Maximum</span>
+                        <div class="bg-slate-50 p-4 rounded-2xl"><input type="number" id="pantry-edit-max" class="w-full bg-transparent text-sm font-800 outline-none text-slate-900" oninput="checkPantryChanges()"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-6 flex gap-3">
+                <button id="pantry-delete-btn-left" class="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center btn-press">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                </button>
+                <button id="save-pantry-btn" onclick="savePantryItem()" class="flex-1 bg-slate-100 text-slate-400 h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press">Back</button>
             </div>
         </div>
     </div>
@@ -247,7 +308,6 @@
         </header>
 
         <main class="flex-1 overflow-y-auto px-6 pb-40 hide-scrollbar relative">
-            <!-- TAB 1: LOG -->
             <div id="tab-log" class="space-y-6 pt-4">
                 <div class="shell-card p-6 space-y-6">
                     <form id="log-form" class="space-y-6" onsubmit="handleLog(event)">
@@ -284,12 +344,11 @@
                     </form>
                 </div>
                 <div class="space-y-4 pt-4 pb-10">
-                    <div class="flex items-center justify-center px-2"><h3 class="label-style text-slate-300">Recent</h3></div>
+                    <div class="section-header"><h3 class="label-style text-slate-300">Recent</h3></div>
                     <div id="recent-logs" class="space-y-3"></div>
                 </div>
             </div>
 
-            <!-- TAB 2: CALENDAR -->
             <div id="tab-calendar" class="hidden space-y-6 pt-4">
                 <div class="bg-transparent">
                     <div class="flex items-center justify-between px-2 py-4">
@@ -319,19 +378,22 @@
                 </div>
             </div>
 
-            <!-- TAB 3: PANTRY (物品箱) -->
             <div id="tab-pantry" class="hidden space-y-6 pt-4">
-                <div class="flex flex-col px-2 space-y-2">
+                <div class="flex flex-col items-center px-2 space-y-2">
                     <h3 class="label-style text-slate-400">My Stock</h3>
                     <p id="pantry-stats" class="text-[11px] font-700 text-slate-300 uppercase tracking-widest">Total 0 types of items</p>
                 </div>
                 
-                <div id="pantry-list" class="space-y-4 pb-10">
-                    <!-- Items generated by JS -->
+                <div id="pantry-list" class="space-y-4"></div>
+
+                <div id="used-up-section" class="space-y-4 pb-10 hidden">
+                    <div class="section-header pt-4">
+                        <h3 class="label-style text-slate-300">Used Up</h3>
+                    </div>
+                    <div id="used-up-list" class="space-y-4"></div>
                 </div>
             </div>
 
-            <!-- TAB 4: PROFILE/OTHER (Placeholder) -->
             <div id="tab-other" class="hidden flex flex-col items-center justify-center py-24">
                 <div class="w-20 h-20 border-2 border-slate-100 rounded-[2rem] flex items-center justify-center mb-6"><i data-lucide="circle-dashed" class="w-8 h-8 text-slate-200"></i></div>
                 <h2 class="text-lg font-800 text-slate-900">Settings</h2>
@@ -363,6 +425,16 @@
                 { id: 'life', name: 'Life', colorClass: 'bg-life', textClass: 'color-life', hex: '#DEB887', icon: 'home' },
                 { id: 'work', name: 'Work', colorClass: 'bg-work', textClass: 'color-work', hex: '#96AD90', icon: 'briefcase' },
                 { id: 'other', name: 'Other', colorClass: 'bg-other', textClass: 'color-other', hex: '#94a3b8', icon: 'more-horizontal' }
+            ],
+            pantryIcons: [
+                'circle', 'apple', 'banana', 'egg', 'milk', 'wheat', 
+                'beef', 'fish', 'coffee', 'ice-cream', 'sandwich', 'soup', 
+                'pizza', 'droplet', 'wine', 'beer', 'package', 'pill', 
+                'spray-can', 'scissors', 'book', 'smartphone', 'sparkles', 'gem'
+            ],
+            pantryColors: [
+                '#94a3b8', '#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', 
+                '#ec4899', '#B2C9AB', '#92A8D1', '#E2B4B4', '#C3B1E1', '#DEB887'
             ]
         };
 
@@ -378,7 +450,11 @@
             pendingDeleteId: null,
             editingEntry: null,
             originalEntryJson: null,
-            expandedLogs: new Set()
+            expandedLogs: new Set(),
+            pantryEditingIdx: null,
+            pantryTempIcon: 'circle',
+            pantryTempColor: '#94a3b8',
+            originalPantryJson: null
         };
 
         function saveToStorage() {
@@ -396,13 +472,10 @@
             document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('[id^="nav-"]').forEach(el => el.classList.replace('text-blue-600', 'text-slate-400'));
             document.getElementById(`tab-${tab}`).classList.remove('hidden');
-            
             const titleMap = { 'log': 'Log', 'calendar': 'View', 'pantry': 'Box', 'other': 'More' };
             document.getElementById('main-title').innerText = titleMap[tab] || 'Matti';
-            
             const navBtn = document.getElementById(`nav-${tab}`);
             if (navBtn) navBtn.classList.replace('text-slate-400', 'text-blue-600');
-            
             if(tab === 'calendar') renderCalendar();
             if(tab === 'pantry') renderPantry();
         }
@@ -448,7 +521,6 @@
             lucide.createIcons();
         }
 
-        // AI Recognition
         async function processImage(input) {
             if (!input.files[0]) return;
             const reader = new FileReader();
@@ -485,7 +557,6 @@
                 name: row.querySelector('.item-name').value,
                 qty: row.querySelector('.item-qty').value
             })).filter(i => i.name.trim() !== '');
-            
             const entry = {
                 id: Date.now(),
                 eurVal: state.currency === 'CNY' ? (val / CONFIG.rate) : val,
@@ -495,10 +566,7 @@
                 time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
                 dateString: document.getElementById('log-date').value
             };
-            
             state.logs.unshift(entry);
-
-            // Update Pantry
             items.forEach(item => {
                 const qtyVal = parseFloat(item.qty) || 1;
                 const existing = state.pantry.find(p => p.name.toLowerCase() === item.name.toLowerCase());
@@ -510,11 +578,11 @@
                         name: item.name,
                         qty: qtyVal,
                         max: qtyVal,
-                        category: entry.category
+                        customIcon: 'circle',
+                        customColor: '#94a3b8'
                     });
                 }
             });
-
             saveToStorage();
             document.getElementById('amount-input').value = '';
             document.getElementById('desc-input').value = '';
@@ -523,79 +591,179 @@
             renderRecent();
         }
 
-        // --- PANTRY Logic ---
-
         function renderPantry() {
             const list = document.getElementById('pantry-list');
+            const usedList = document.getElementById('used-up-list');
+            const usedSection = document.getElementById('used-up-section');
             const stats = document.getElementById('pantry-stats');
             
-            if (state.pantry.length === 0) {
-                list.innerHTML = `<div class="py-20 text-center text-slate-200 label-style italic">Box is empty</div>`;
-                stats.innerText = "Total 0 types of items";
-                return;
+            const activeItems = state.pantry.filter(i => i.qty > 0);
+            const usedItems = state.pantry.filter(i => i.qty <= 0);
+
+            stats.innerText = `Total ${activeItems.length} types of items`;
+            
+            if (activeItems.length === 0) {
+                list.innerHTML = `<div class="py-10 text-center text-slate-200 label-style italic">Box is empty</div>`;
+            } else {
+                list.innerHTML = activeItems.map((item, index) => {
+                    const originalIndex = state.pantry.indexOf(item);
+                    return createPantryItemHTML(item, originalIndex, false);
+                }).join('');
             }
 
-            stats.innerText = `Total ${state.pantry.length} types of items`;
-            
-            list.innerHTML = state.pantry.map((item, index) => {
-                const progress = Math.min(100, (item.qty / item.max) * 100);
-                const cat = CONFIG.categories.find(c => c.name === item.category) || CONFIG.categories[6];
-                
-                return `
-                <div class="shell-card p-5 space-y-4">
-                    <div class="flex justify-between items-start">
-                        <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-xl border border-slate-50 flex items-center justify-center ${cat.textClass} bg-slate-50/50">
-                                <i data-lucide="${cat.icon}" class="w-4 h-4"></i>
-                            </div>
-                            <div>
-                                <h4 class="text-sm font-800 text-slate-900">${item.name}</h4>
-                                <p class="text-[9px] font-800 text-slate-300 uppercase tracking-widest">${item.category}</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 bg-slate-50 rounded-xl p-1">
-                            <button onclick="updatePantryQty(${index}, -1)" class="w-8 h-8 flex items-center justify-center text-slate-400 btn-press"><i data-lucide="minus" class="w-4 h-4"></i></button>
-                            <span class="text-xs font-800 text-slate-900 w-6 text-center">${item.qty}</span>
-                            <button onclick="updatePantryQty(${index}, 1)" class="w-8 h-8 flex items-center justify-center text-blue-600 btn-press"><i data-lucide="plus" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>
-                    <div class="space-y-1.5">
-                        <div class="progress-bar">
-                            <div class="progress-fill ${cat.colorClass}" style="width: ${progress}%"></div>
-                        </div>
-                        <div class="flex justify-between text-[8px] font-800 text-slate-300 uppercase tracking-widest">
-                            <span>Left: ${item.qty}</span>
-                            <span>Stock: ${item.max}</span>
-                        </div>
-                    </div>
-                </div>
-                `;
-            }).join('');
+            if (usedItems.length > 0) {
+                usedSection.classList.remove('hidden');
+                usedList.innerHTML = usedItems.map((item, index) => {
+                    const originalIndex = state.pantry.indexOf(item);
+                    return createPantryItemHTML(item, originalIndex, true);
+                }).join('');
+            } else {
+                usedSection.classList.add('hidden');
+            }
+
+            document.querySelectorAll('#tab-pantry .swipe-container').forEach(setupSwipe);
             lucide.createIcons();
         }
 
-        function updatePantryQty(index, delta) {
-            state.pantry[index].qty += delta;
-            if (state.pantry[index].qty <= 0) {
-                state.pantry.splice(index, 1);
-            } else if (state.pantry[index].qty > state.pantry[index].max) {
-                state.pantry[index].max = state.pantry[index].qty;
-            }
+        function createPantryItemHTML(item, index, isUsed) {
+            const progress = Math.min(100, (item.qty / item.max) * 100);
+            const icon = item.customIcon || 'circle';
+            const color = item.customColor || '#94a3b8';
+            
+            // 关键：这里我们将 used-up-dim 效果只加在 swipe-content 的子容器上，不让它影响父级和背景红色
+            return `
+            <div class="swipe-container inner-stroke" data-idx="${index}">
+                <div class="swipe-action" onclick="event.stopPropagation(); deletePantryItem(${index})"><i data-lucide="trash-2" class="w-5 h-5"></i></div>
+                <div class="swipe-content p-5 space-y-4" onclick="openPantryEdit(${index})">
+                    <div class="${isUsed ? 'used-up-dim' : ''} space-y-4">
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: ${color}20; color: ${color}">
+                                    <i data-lucide="${icon}" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-800 text-slate-900">${item.name}</h4>
+                                    <p class="text-[9px] font-800 text-slate-300 uppercase tracking-widest">Left: ${item.qty}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 bg-slate-50 rounded-xl p-1" onclick="event.stopPropagation()">
+                                <button onclick="updatePantryQty(${index}, -1)" class="w-8 h-8 flex items-center justify-center text-slate-400 btn-press"><i data-lucide="minus" class="w-4 h-4"></i></button>
+                                <span class="text-xs font-800 text-slate-900 w-6 text-center">${item.qty}</span>
+                                <button onclick="updatePantryQty(${index}, 1)" class="w-8 h-8 flex items-center justify-center text-blue-600 btn-press"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progress}%; background: ${color}"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function deletePantryItem(index) {
+            state.pantry.splice(index, 1);
             saveToStorage();
             renderPantry();
         }
 
-        // --- Edit Modal Logic (Same as before) ---
+        function updatePantryQty(index, delta) {
+            state.pantry[index].qty += delta;
+            if (state.pantry[index].qty < 0) state.pantry[index].qty = 0;
+            if (state.pantry[index].qty > state.pantry[index].max) state.pantry[index].max = state.pantry[index].qty;
+            saveToStorage();
+            renderPantry();
+        }
+
+        function openPantryEdit(index) {
+            state.pantryEditingIdx = index;
+            const item = state.pantry[index];
+            state.pantryTempIcon = item.customIcon || 'circle';
+            state.pantryTempColor = item.customColor || '#94a3b8';
+            document.getElementById('pantry-edit-name').value = item.name;
+            document.getElementById('pantry-edit-qty').value = item.qty;
+            document.getElementById('pantry-edit-max').value = item.max;
+            
+            state.originalPantryJson = JSON.stringify({
+                name: item.name,
+                qty: item.qty,
+                max: item.max,
+                icon: state.pantryTempIcon,
+                color: state.pantryTempColor
+            });
+            
+            document.getElementById('pantry-delete-btn-left').onclick = () => { deletePantryItem(state.pantryEditingIdx); closePantryEdit(); };
+            
+            renderPantryIconGrid();
+            renderPantryColorGrid();
+            checkPantryChanges();
+            document.getElementById('pantry-edit-modal').classList.add('active');
+        }
+
+        function checkPantryChanges() {
+            const currentObj = {
+                name: document.getElementById('pantry-edit-name').value,
+                qty: parseInt(document.getElementById('pantry-edit-qty').value) || 0,
+                max: parseInt(document.getElementById('pantry-edit-max').value) || 1,
+                icon: state.pantryTempIcon,
+                color: state.pantryTempColor
+            };
+            const btn = document.getElementById('save-pantry-btn');
+            if (JSON.stringify(currentObj) !== state.originalPantryJson) {
+                btn.innerText = "Save Changes";
+                btn.classList.replace('bg-slate-100', 'bg-blue-600');
+                btn.classList.replace('text-slate-400', 'text-white');
+            } else {
+                btn.innerText = "Back";
+                btn.classList.replace('bg-blue-600', 'bg-slate-100');
+                btn.classList.replace('text-white', 'text-slate-400');
+            }
+        }
+
+        function renderPantryIconGrid() {
+            const grid = document.getElementById('pantry-icon-grid');
+            grid.innerHTML = CONFIG.pantryIcons.map(icon => `
+                <div onclick="state.pantryTempIcon='${icon}'; renderPantryIconGrid(); checkPantryChanges()" class="icon-box-choice ${state.pantryTempIcon === icon ? 'selected' : ''}">
+                    <i data-lucide="${icon}" class="w-5 h-5"></i>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderPantryColorGrid() {
+            const grid = document.getElementById('pantry-color-grid');
+            grid.innerHTML = CONFIG.pantryColors.map(color => `
+                <div class="flex justify-center items-center">
+                    <div onclick="state.pantryTempColor='${color}'; renderPantryColorGrid(); checkPantryChanges()" class="color-dot-choice ${state.pantryTempColor === color ? 'selected' : ''}" style="background: ${color}"></div>
+                </div>
+            `).join('');
+        }
+
+        function savePantryItem() {
+            const btn = document.getElementById('save-pantry-btn');
+            if (btn.innerText === "Back") {
+                closePantryEdit();
+                return;
+            }
+            const item = state.pantry[state.pantryEditingIdx];
+            item.name = document.getElementById('pantry-edit-name').value;
+            item.qty = parseInt(document.getElementById('pantry-edit-qty').value) || 0;
+            item.max = parseInt(document.getElementById('pantry-edit-max').value) || 1;
+            item.customIcon = state.pantryTempIcon;
+            item.customColor = state.pantryTempColor;
+            saveToStorage();
+            closePantryEdit();
+            renderPantry();
+        }
+
+        function closePantryEdit() { document.getElementById('pantry-edit-modal').classList.remove('active'); }
 
         function openEdit(id) {
             const entry = state.logs.find(l => l.id === id);
             if(!entry) return;
             state.editingEntry = JSON.parse(JSON.stringify(entry));
             state.originalEntryJson = JSON.stringify(state.editingEntry);
-            
             document.getElementById('edit-amount').value = state.editingEntry.eurVal.toFixed(2);
             document.getElementById('edit-desc').value = state.editingEntry.description;
-            
             renderEditCategories();
             renderEditItems();
             checkForChanges();
@@ -621,37 +789,79 @@
             lucide.createIcons();
         }
 
-        function addEditStockRow() {
-            state.editingEntry.items.push({name: '', qty: '1'});
-            renderEditItems();
-            checkForChanges();
-        }
+        function addEditStockRow() { state.editingEntry.items.push({name: '', qty: '1'}); renderEditItems(); checkForChanges(); }
 
         function checkForChanges() {
             const currentAmount = parseFloat(document.getElementById('edit-amount').value) || 0;
             const currentDesc = document.getElementById('edit-desc').value;
             const currentObj = { ...state.editingEntry, eurVal: currentAmount, description: currentDesc };
             const isDifferent = JSON.stringify(currentObj) !== state.originalEntryJson;
-            const container = document.getElementById('save-edit-container');
-            if (isDifferent) container.classList.remove('hidden'); else container.classList.add('hidden');
+            
+            const btn = document.getElementById('save-edit-btn');
+            if (isDifferent) {
+                btn.innerText = "Save Changes";
+                btn.classList.replace('bg-slate-100', 'bg-blue-600');
+                btn.classList.replace('text-slate-400', 'text-white');
+            } else {
+                btn.innerText = "Back";
+                btn.classList.replace('bg-blue-600', 'bg-slate-100');
+                btn.classList.replace('text-white', 'text-slate-400');
+            }
         }
 
         function saveEdit() {
-            state.editingEntry.eurVal = parseFloat(document.getElementById('edit-amount').value) || 0;
-            state.editingEntry.description = document.getElementById('edit-desc').value;
+            const btn = document.getElementById('save-edit-btn');
+            if (btn.innerText === "Back") {
+                closeEditModal();
+                return;
+            }
+
+            const oldEntry = JSON.parse(state.originalEntryJson);
+            const newAmount = parseFloat(document.getElementById('edit-amount').value) || 0;
+            const newDesc = document.getElementById('edit-desc').value;
+            const newItems = state.editingEntry.items;
+
+            // 逻辑：更新 Pantry 数量变动
+            oldEntry.items.forEach(oldItem => {
+                const target = state.pantry.find(p => p.name.toLowerCase() === oldItem.name.toLowerCase());
+                if(target) target.qty -= (parseFloat(oldItem.qty) || 0);
+            });
+
+            newItems.forEach(newItem => {
+                const qtyVal = parseFloat(newItem.qty) || 0;
+                const target = state.pantry.find(p => p.name.toLowerCase() === newItem.name.toLowerCase());
+                if(target) {
+                    target.qty += qtyVal;
+                    target.max = Math.max(target.max, target.qty);
+                } else if(newItem.name.trim() !== '') {
+                    state.pantry.push({
+                        name: newItem.name,
+                        qty: qtyVal,
+                        max: qtyVal,
+                        customIcon: 'circle',
+                        customColor: '#94a3b8'
+                    });
+                }
+            });
+
+            state.pantry.forEach(p => { if(p.qty < 0) p.qty = 0; });
+
             const idx = state.logs.findIndex(l => l.id === state.editingEntry.id);
             if(idx !== -1) {
-                state.logs[idx] = JSON.parse(JSON.stringify(state.editingEntry));
+                state.logs[idx] = {
+                    ...state.editingEntry,
+                    eurVal: newAmount,
+                    description: newDesc
+                };
                 saveToStorage();
                 closeEditModal();
                 renderRecent();
                 if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar();
+                if(!document.getElementById('tab-pantry').classList.contains('hidden')) renderPantry();
             }
         }
 
-        function closeEditModal() { document.getElementById('edit-modal').classList.remove('active'); state.editingEntry = null; state.originalEntryJson = null; }
-
-        // --- Global Rendering Helpers ---
+        function closeEditModal() { document.getElementById('edit-modal').classList.remove('active'); }
 
         function createLogItemHTML(log) {
             const cat = CONFIG.categories.find(c => c.name === log.category) || CONFIG.categories[6];
@@ -698,7 +908,26 @@
 
         function openDeleteModal(id) { state.pendingDeleteId = id; document.getElementById('delete-modal').classList.add('active'); }
         function closeDeleteModal() { document.getElementById('delete-modal').classList.remove('active'); }
-        document.getElementById('confirm-delete-btn').onclick = () => { if (state.pendingDeleteId) { state.logs = state.logs.filter(l => l.id !== state.pendingDeleteId); saveToStorage(); closeDeleteModal(); renderRecent(); if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar(); } };
+        document.getElementById('confirm-delete-btn').onclick = () => { 
+            if (state.pendingDeleteId) {
+                const logToDelete = state.logs.find(l => l.id === state.pendingDeleteId);
+                if(logToDelete) {
+                    logToDelete.items.forEach(item => {
+                        const target = state.pantry.find(p => p.name.toLowerCase() === item.name.toLowerCase());
+                        if(target) {
+                            target.qty -= (parseFloat(item.qty) || 0);
+                            if(target.qty < 0) target.qty = 0;
+                        }
+                    });
+                }
+                state.logs = state.logs.filter(l => l.id !== state.pendingDeleteId); 
+                saveToStorage(); 
+                closeDeleteModal(); 
+                renderRecent(); 
+                if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar();
+                if(!document.getElementById('tab-pantry').classList.contains('hidden')) renderPantry();
+            } 
+        };
 
         function renderRecent() {
             const list = document.getElementById('recent-logs');
@@ -736,7 +965,6 @@
 
         document.getElementById('month-prev').onclick = () => { state.currentDate.setMonth(m => m-1); renderCalendar(); };
         document.getElementById('month-next').onclick = () => { state.currentDate.setMonth(m => m+1); renderCalendar(); };
-
         window.onload = () => { initFormDate(); renderCategories(); renderRecent(); setCurrency(state.currency); lucide.createIcons(); };
     </script>
 </body>
