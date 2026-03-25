@@ -1,29 +1,31 @@
 // api/analyze.js
 export default async function handler(req, res) {
-    // 1. 强力跨域支持
+    // 跨域头
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    try {
-        // 2. 暴力获取请求体（兼容所有中间件）
-        let rawBody = '';
-        if (req.body && typeof req.body === 'object') {
-            rawBody = req.body;
-        } else {
-            // 如果 Vercel 没解析，手动解析字符串
-            rawBody = JSON.parse(req.body || "{}");
-        }
+    if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
 
-        const image = rawBody.image;
+    try {
+        const { image } = req.body;
         const API_KEY = process.env.GEMINI_API_KEY;
 
-        // 3. 错误预防提示
-        if (!API_KEY) return res.status(200).send({ message: "ENV_MISSING: Key not found" });
-        if (!image) return res.status(200).send({ message: "DATA_MISSING: Image field empty" });
+        if (!API_KEY) return res.status(200).json({ message: "ENV_MISSING: Key not found" });
+        
+        // 修复：增加类型防御
+        if (!image) {
+            return res.status(200).json({ message: "DATA_MISSING: Image field is empty" });
+        }
+        
+        // 修复：强制转换成字符串，防止当前端传数组时报错
+        let base64Data = String(image); 
 
-        const base64Data = image.includes(',') ? image.split(',')[1] : image;
+        // 修复：增加防御性检查
+        if (typeof base64Data === 'string' && base64Data.includes(',')) {
+            base64Data = base64Data.split(',')[1];
+        }
 
         // 4. 调用 Google API
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
@@ -51,12 +53,10 @@ export default async function handler(req, res) {
         }
 
         const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        // 5. 确保返回的是干净的 JSON 对象
         res.status(200).json(JSON.parse(aiText));
 
     } catch (err) {
-        // 关键：捕捉所有错误并以 JSON 形式返回，防止触发 Vercel 的 500 页面
-        console.error(err);
+        console.error("Crash Caught:", err);
         res.status(200).json({ message: "CRASH: " + err.message });
     }
 }
