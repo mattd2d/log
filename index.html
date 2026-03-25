@@ -347,54 +347,81 @@
         if(el) el.value = new Date().toISOString().split('T')[0]; 
     }
 
-    // 4. 核心功能：AI 识图 (对应后端 /api/analyze)
+ // 4. 核心功能：AI 识图 (对应后端 /api/analyze)
     async function processImage(base64Data) {
         const statusEl = document.getElementById('ai-status');
         const statusText = document.getElementById('ai-status-text');
         
-        // 显示加载动画
+        // 1. 显示加载动画
         if(statusEl) statusEl.style.display = 'block';
         if(statusText) statusText.innerText = 'AI 正在识图...';
 
         try {
+            // 2. 前端预处理：确保只发送纯 Base64 字符串给后端
+            let pureBase64 = base64Data;
+            if (typeof pureBase64 === 'string' && pureBase64.includes(',')) {
+                pureBase64 = pureBase64.split(',')[1];
+            }
+
             const response = await fetch('/api/analyze', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: base64Data })
+                headers: { 
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify({ image: pureBase64 })
             });
 
-            
             const result = await response.json();
-if (result.message) { // 如果后端传回了自定义错误消息
-    alert("识别提醒: " + result.message);
-    return;
-}
-            if (!response.ok) throw new Error(result.message || '识图失败');
 
-            // 成功后填表
+            // 3. 处理后端自定义错误信息 (CRASH/GOOGLE_ERROR 等)
+            if (result.message && !result.total_amount) { 
+                alert("识别提醒: " + result.message);
+                if(statusEl) statusEl.style.display = 'none';
+                return;
+            }
+
+            if (!response.ok) throw new Error(result.message || '网络请求失败');
+
+            // 4. 识图成功：自动填表
             if (result.total_amount) {
                 document.getElementById('amount-input').value = result.total_amount;
                 calcConversion(); // 触发汇率显示
             }
-            if (result.description) document.getElementById('desc-input').value = result.description;
-            if (result.category) {
-                const matched = CONFIG.categories.find(c => c.name.toLowerCase() === result.category.toLowerCase());
-                if(matched) selectCat(matched.name);
+            
+            if (result.description) {
+                document.getElementById('desc-input').value = result.description;
             }
 
-            // 自动添加 Box 清单
-            if (result.items && result.items.length > 0) {
+            if (result.category) {
+                // 尝试匹配分类（不区分大小写）
+                const matched = CONFIG.categories.find(c => 
+                    c.name.toLowerCase() === result.category.toLowerCase()
+                );
+                if(matched) {
+                    selectCat(matched.name);
+                } else {
+                    selectCat('Other'); // 匹配不到则默认 Other
+                }
+            }
+
+            // 5. 自动添加 Box 清单 (库存)
+            if (result.items && Array.isArray(result.items)) {
+                // 先清空当前的临时库存行，防止重复
+                document.getElementById('stock-container').innerHTML = '';
                 result.items.forEach(item => {
                     addStockRow(item.name, item.qty);
                 });
             }
 
+            // 6. 成功反馈
             if(statusText) statusText.innerText = '识图成功！';
-            setTimeout(() => { if(statusEl) statusEl.style.display = 'none'; }, 2000);
+            setTimeout(() => { 
+                if(statusEl) statusEl.style.display = 'none'; 
+            }, 2000);
 
         } catch (error) {
-            console.error(error);
-            alert('错误: ' + error.message);
+            console.error('Frontend Error:', error);
+            alert('识图过程出错: ' + error.message);
             if(statusEl) statusEl.style.display = 'none';
         }
     }
