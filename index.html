@@ -367,18 +367,20 @@
         const result = await response.json();
 
         if (!response.ok) {
-            // 直接抛出后端返回的错误信息
-            throw new Error(result.message || '识图接口报错');
+            // 这里会直接弹出后端传回的具体的错误原因
+            throw new Error(result.message || '识图失败');
         }
 
-        // 填充数据
+        // 成功后自动填表
         if (result.total_amount) document.getElementById('amount').value = result.total_amount;
         if (result.description) document.getElementById('desc').value = result.description;
         if (result.category) document.getElementById('cat').value = result.category;
-        
-        // 处理库存清单 (如有)
-        if (result.items && window.addStockItem) {
-            result.items.forEach(item => addStockItem(item.name, item.qty));
+
+        // 如果后端返回了清单，自动添加
+        if (result.items && result.items.length > 0) {
+            result.items.forEach(item => {
+                if (window.addStockItem) addStockItem(item.name, item.qty);
+            });
         }
 
         statusEl.innerText = '识图成功！';
@@ -386,7 +388,7 @@
 
     } catch (error) {
         console.error(error);
-        alert(error.message); // 这样报错会显示具体原因，而不是模糊的提示
+        alert('错误: ' + error.message); // 会弹出具体的报错文字
         statusEl.style.display = 'none';
     }
 }
