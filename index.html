@@ -363,7 +363,12 @@
                 body: JSON.stringify({ image: base64Data })
             });
 
+            
             const result = await response.json();
+if (result.message) { // 如果后端传回了自定义错误消息
+    alert("识别提醒: " + result.message);
+    return;
+}
             if (!response.ok) throw new Error(result.message || '识图失败');
 
             // 成功后填表
