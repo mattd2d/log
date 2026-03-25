@@ -1,62 +1,73 @@
 // api/analyze.js
 export default async function handler(req, res) {
-    // 跨域头
+    // 1. 设置跨域头
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
     if (req.method === 'OPTIONS') return res.status(200).end();
-
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
 
     try {
-        const { image } = req.body;
+        // 2. 健壮的参数解析
+        let body = req.body;
+        if (typeof body === 'string') body = JSON.parse(body);
+        
+        const { image } = body || {};
         const API_KEY = process.env.GEMINI_API_KEY;
 
-        if (!API_KEY) return res.status(200).json({ message: "ENV_MISSING: Key not found" });
+        // 3. 拦截无效输入
+        if (!API_KEY) return res.status(200).json({ message: "后端未配置 GEMINI_API_KEY，请在 Vercel 设置环境变量并 Redeploy。" });
         
-        // 修复：增加类型防御
-        if (!image) {
-            return res.status(200).json({ message: "DATA_MISSING: Image field is empty" });
-        }
-        
-        // 修复：强制转换成字符串，防止当前端传数组时报错
-        let base64Data = String(image); 
-
-        // 修复：增加防御性检查
-        if (typeof base64Data === 'string' && base64Data.includes(',')) {
-            base64Data = base64Data.split(',')[1];
+        if (!image || String(image) === "[object Object]") {
+            return res.status(200).json({ message: "数据传输异常：后端收到的图片数据为空或非法对象。" });
         }
 
-        // 4. 调用 Google API
+        // 4. 确保 Base64 纯净（再次双重保险）
+        let base64Data = String(image);
+        if (base64Data.includes(',')) base64Data = base64Data.split(',')[1];
+
+        // 5. 调用 Google Gemini API
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
         
-        const response = await fetch(url, {
+        const googleResponse = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{
                     parts: [
-                        { text: "Return JSON only: { \"total_amount\": number, \"description\": \"string\", \"category\": \"Food|Traffic|Shop|Social|Life|Work|Other\", \"items\": [{\"name\":\"string\",\"qty\":\"string\"}] }" },
+                        { text: "Analyze receipt. Return JSON ONLY: { \"total_amount\": number, \"description\": \"string\", \"category\": \"Food|Traffic|Shop|Social|Life|Work|Other\", \"items\": [{\"name\":\"string\",\"qty\":\"string\"}] }" },
                         { inlineData: { mimeType: "image/jpeg", data: base64Data } }
                     ]
                 }],
-                generationConfig: { responseMimeType: "application/json" }
+                generationConfig: { 
+                    responseMimeType: "application/json",
+                    temperature: 0.1 
+                }
             })
         });
 
-        const data = await response.json();
+        const data = await googleResponse.json();
 
-        if (!response.ok) {
+        // 检查 Google 的具体报错
+        if (!googleResponse.ok) {
             return res.status(200).json({ 
-                message: "GOOGLE_ERROR: " + (data.error?.message || "Check API Key") 
+                message: "Google AI 拒绝请求: " + (data.error?.message || "原因未知"),
+                details: data.error 
             });
         }
 
+        // 6. 成功返回
         const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!aiText) throw new Error("AI 响应内容为空");
+
         res.status(200).json(JSON.parse(aiText));
 
     } catch (err) {
-        console.error("Crash Caught:", err);
-        res.status(200).json({ message: "CRASH: " + err.message });
+        console.error("Critical Backend Error:", err);
+        // 无论如何返回 JSON，防止前端解析失败
+        res.status(200).json({ 
+            message: "后端运行异常: " + err.message 
+        });
     }
 }
