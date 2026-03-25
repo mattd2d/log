@@ -1,38 +1,40 @@
+// api/analyze.js
 export default async function handler(req, res) {
-    // 跨域头
+    // 1. 强力跨域支持
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    // 修复：确保 body 存在
-    let body = req.body;
-    if (typeof body === 'string') {
-        try {
-            body = JSON.parse(body);
-        } catch (e) {
-            return res.status(200).json({ message: "解析请求体失败" });
-        }
-    }
-
-    const image = body?.image; // 安全获取 image
-    const API_KEY = process.env.GEMINI_API_KEY;
-
-    if (!API_KEY) return res.status(200).json({ message: "环境变量 GEMINI_API_KEY 缺失" });
-    if (!image) return res.status(200).json({ message: "前端未传 image 字段" });
-
-    // 强制清理 Base64 头部
-    const base64Data = image.includes(',') ? image.split(',')[1] : image;
-
     try {
+        // 2. 暴力获取请求体（兼容所有中间件）
+        let rawBody = '';
+        if (req.body && typeof req.body === 'object') {
+            rawBody = req.body;
+        } else {
+            // 如果 Vercel 没解析，手动解析字符串
+            rawBody = JSON.parse(req.body || "{}");
+        }
+
+        const image = rawBody.image;
+        const API_KEY = process.env.GEMINI_API_KEY;
+
+        // 3. 错误预防提示
+        if (!API_KEY) return res.status(200).send({ message: "ENV_MISSING: Key not found" });
+        if (!image) return res.status(200).send({ message: "DATA_MISSING: Image field empty" });
+
+        const base64Data = image.includes(',') ? image.split(',')[1] : image;
+
+        // 4. 调用 Google API
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 contents: [{
                     parts: [
-                        { text: "Analyze this receipt. Return ONLY JSON: { \"total_amount\": number, \"description\": \"string\", \"category\": \"Food|Traffic|Shop|Social|Life|Work|Other\", \"items\": [{\"name\":\"string\",\"qty\":\"string\"}] }" },
+                        { text: "Return JSON only: { \"total_amount\": number, \"description\": \"string\", \"category\": \"Food|Traffic|Shop|Social|Life|Work|Other\", \"items\": [{\"name\":\"string\",\"qty\":\"string\"}] }" },
                         { inlineData: { mimeType: "image/jpeg", data: base64Data } }
                     ]
                 }],
@@ -41,11 +43,20 @@ export default async function handler(req, res) {
         });
 
         const data = await response.json();
-        if (!response.ok) return res.status(200).json({ message: "Google API 错误: " + (data.error?.message || "未知") });
+
+        if (!response.ok) {
+            return res.status(200).json({ 
+                message: "GOOGLE_ERROR: " + (data.error?.message || "Check API Key") 
+            });
+        }
 
         const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        // 5. 确保返回的是干净的 JSON 对象
         res.status(200).json(JSON.parse(aiText));
+
     } catch (err) {
-        res.status(200).json({ message: "运行崩溃: " + err.message });
+        // 关键：捕捉所有错误并以 JSON 形式返回，防止触发 Vercel 的 500 页面
+        console.error(err);
+        res.status(200).json({ message: "CRASH: " + err.message });
     }
 }
