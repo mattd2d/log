@@ -7,8 +7,8 @@ export default async function handler(req, res) {
     try {
         const { image } = JSON.parse(req.body);
         
-        // 使用 v1 稳定版接口
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // 关键点 1：切回 v1beta 路径，因为只有 beta 版支持强制 JSON 模式 (responseMimeType)
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
         
         const response = await fetch(url, {
             method: 'POST',
@@ -21,9 +21,9 @@ export default async function handler(req, res) {
                     ]
                 }],
                 generationConfig: { 
-                    // 关键修复：在 v1 接口中，必须使用下划线命名法
-                    response_mime_type: "application/json",
-                    temperature: 0.2
+                    // 关键点 2：在 v1beta 中，字段名必须是 responseMimeType (小驼峰)
+                    responseMimeType: "application/json",
+                    temperature: 0.1
                 }
             })
         });
