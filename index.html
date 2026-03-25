@@ -3,68 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>MoneyTracker - Cloud Sync</title>
+    <title>MoneyTracker - Matti Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/lucide@0.321.0/dist/umd/lucide.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-        :root { --shell-bg: #f8fafc; --shell-card: #ffffff; --shell-accent: #2563eb; --shell-text: #0f172a; --border-color: #e2e8f0; }
-        .color-food { color: #B2C9AB !important; } .bg-food { background-color: #B2C9AB !important; color: white !important; }
-        .color-traffic { color: #92A8D1 !important; } .bg-traffic { background-color: #92A8D1 !important; color: white !important; }
-        .color-shop { color: #E2B4B4 !important; } .bg-shop { background-color: #E2B4B4 !important; color: white !important; }
-        .color-social { color: #C3B1E1 !important; } .bg-social { background-color: #C3B1E1 !important; color: white !important; }
-        .color-life { color: #DEB887 !important; } .bg-life { background-color: #DEB887 !important; color: white !important; }
-        .color-work { color: #96AD90 !important; } .bg-work { background-color: #96AD90 !important; color: white !important; }
-        .color-other { color: #94a3b8 !important; } .bg-other { background-color: #94a3b8 !important; color: white !important; }
+        
+        :root {
+            --shell-bg: #f8fafc;
+            --shell-card: #ffffff;
+            --shell-accent: #2563eb;
+            --shell-text: #0f172a;
+            --border-color: #e2e8f0;
+        }
+
+        .color-food { color: #B2C9AB !important; }
+        .bg-food { background-color: #B2C9AB !important; color: white !important; border-color: transparent !important; }
+        .color-traffic { color: #92A8D1 !important; }
+        .bg-traffic { background-color: #92A8D1 !important; color: white !important; border-color: transparent !important; }
+        .color-shop { color: #E2B4B4 !important; }
+        .bg-shop { background-color: #E2B4B4 !important; color: white !important; border-color: transparent !important; }
+        .color-social { color: #C3B1E1 !important; }
+        .bg-social { background-color: #C3B1E1 !important; color: white !important; border-color: transparent !important; }
+        .color-life { color: #DEB887 !important; }
+        .bg-life { background-color: #DEB887 !important; color: white !important; border-color: transparent !important; }
+        .color-work { color: #96AD90 !important; }
+        .bg-work { background-color: #96AD90 !important; color: white !important; border-color: transparent !important; }
+        .color-other { color: #94a3b8 !important; }
+        .bg-other { background-color: #94a3b8 !important; color: white !important; border-color: transparent !important; }
+
         * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
         body { background-color: var(--shell-bg); color: var(--shell-text); -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
-        .shell-card { background: var(--shell-card); border-radius: 32px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); border: 1px solid var(--border-color); }
-        .label-style { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.15em; }
-        .swipe-container { position: relative; overflow: hidden; border-radius: 2rem; transition: all 0.3s ease; background: #fda4af; }
-        .swipe-content { position: relative; z-index: 2; background: white; transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
-        .swipe-action { position: absolute; right: 0; top: 0; bottom: 0; width: 80px; background: #fda4af; display: flex; align-items: center; justify-content: center; color: white; z-index: 1; border-radius: 0 2rem 2rem 0; }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid var(--border-color); border-left: 1px solid var(--border-color); }
-        .day-cell { aspect-ratio: 1 / 1.15; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); background: white; transition: all 0.2s; }
+
+        .shell-card {
+            background: var(--shell-card);
+            border-radius: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border-color);
+        }
+
+        .label-style {
+            font-size: 10px;
+            font-weight: 500; 
+            text-transform: uppercase;
+            letter-spacing: 0.15em; 
+        }
+
+        .swipe-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 2rem;
+            transition: all 0.3s ease;
+            background: #fda4af; 
+        }
+        .swipe-content {
+            position: relative;
+            z-index: 2;
+            background: white;
+            transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+        .swipe-action {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 80px;
+            background: #fda4af;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            z-index: 1;
+            border-radius: 0 2rem 2rem 0;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            border-top: 1px solid var(--border-color);
+            border-left: 1px solid var(--border-color);
+        }
+        .day-cell {
+            aspect-ratio: 1 / 1.15;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            background: white;
+            transition: all 0.2s;
+        }
+        .day-cell.has-items { background: #f1f5f9; }
         .day-cell.selected { background: var(--shell-accent) !important; color: white !important; }
         .day-cell.today { color: var(--shell-accent); font-weight: 800; }
-        .dots-container { display: flex; gap: 2px; justify-content: center; position: absolute; bottom: 6px; width: 100%; padding: 0 4px; flex-wrap: wrap; }
+
+        .dots-container {
+            display: flex; gap: 2px; justify-content: center; position: absolute; bottom: 6px; width: 100%; padding: 0 4px; flex-wrap: wrap;
+        }
         .dot { width: 4px; height: 4px; border-radius: 50%; }
+
         .btn-press:active { transform: scale(0.96); opacity: 0.9; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .glass-nav { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05); }
-        .bottom-blur-zone { position: absolute; bottom: 0; left: 0; right: 0; height: 120px; pointer-events: none; z-index: 400; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); mask-image: linear-gradient(to top, black 40%, transparent 100%); -webkit-mask-image: linear-gradient(to top, black 40%, transparent 100%); }
-        .category-pill { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; border: 1.5px solid var(--border-color); color: #94a3b8; background: transparent; transition: all 0.2s ease; }
+        
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .bottom-blur-zone {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            pointer-events: none;
+            z-index: 400;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            mask-image: linear-gradient(to top, black 40%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to top, black 40%, transparent 100%);
+        }
+
+        .category-pill {
+            font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em;
+            border: 1.5px solid var(--border-color); color: #94a3b8; background: transparent; transition: all 0.2s ease;
+        }
         .inner-stroke { border: 1.5px solid var(--border-color); }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.2); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: all 0.2s; }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.2); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: all 0.2s;
+        }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal-card { transform: scale(0.9); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .modal-overlay.active .modal-card { transform: scale(1); }
-        #auth-overlay { background: white; z-index: 2000; flex-direction: column; opacity: 1; pointer-events: auto; }
-        .loading-spinner { width: 24px; height: 24px; border: 3px solid #f3f3f3; border-top: 3px solid #2563eb; border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="select-none overflow-hidden">
 
-    <!-- Auth Overlay -->
-    <div id="auth-overlay" class="modal-overlay flex">
-        <div class="flex flex-col items-center gap-6 p-8">
-            <div class="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center text-blue-600 mb-2">
-                <i data-lucide="wallet" class="w-10 h-10"></i>
-            </div>
-            <div class="text-center">
-                <h2 class="text-2xl font-800 text-slate-900">MoneyTracker</h2>
-                <p class="text-slate-400 text-xs font-600 mt-2">云端同步您的每一笔支出</p>
-            </div>
-            <div id="auth-loading" class="hidden flex flex-col items-center gap-4">
-                <div class="loading-spinner"></div>
-                <p class="text-[10px] font-800 text-slate-300 uppercase tracking-widest">正在连接云端...</p>
-            </div>
-            <button id="login-btn" class="w-64 py-4 bg-slate-900 text-white text-[10px] font-800 uppercase tracking-[0.2em] rounded-2xl btn-press shadow-xl">使用 Google 登录</button>
-        </div>
-    </div>
-
-    <!-- Delete Modal -->
+    <!-- 删除确认弹窗 -->
     <div id="delete-modal" class="modal-overlay">
         <div class="modal-card w-72 bg-white rounded-[2.5rem] p-8 shadow-2xl border border-slate-100">
             <div class="flex flex-col items-center text-center space-y-4">
@@ -72,11 +154,11 @@
                     <i data-lucide="trash-2" class="w-7 h-7"></i>
                 </div>
                 <div>
-                    <h4 class="text-slate-900 font-800 text-lg">确认删除？</h4>
-                    <p class="text-slate-400 text-xs font-600 mt-1 leading-relaxed">删除后数据将无法从云端恢复。</p>
+                    <h4 class="text-slate-900 font-800 text-lg">确定删除吗？</h4>
+                    <p class="text-slate-400 text-xs font-600 mt-1 leading-relaxed">此记录将被永久移除。</p>
                 </div>
                 <div class="flex flex-col w-full gap-2 pt-2">
-                    <button id="confirm-delete-btn" class="w-full py-4 bg-rose-400 text-white text-[10px] font-800 uppercase tracking-widest rounded-2xl btn-press">确认删除</button>
+                    <button id="confirm-delete-btn" class="w-full py-4 bg-rose-400 text-white text-[10px] font-800 uppercase tracking-widest rounded-2xl btn-press">删除</button>
                     <button onclick="closeDeleteModal()" class="w-full py-4 bg-slate-50 text-slate-400 text-[10px] font-800 uppercase tracking-widest rounded-2xl btn-press">取消</button>
                 </div>
             </div>
@@ -87,49 +169,50 @@
         
         <header class="px-7 pt-14 pb-6 flex justify-between items-center bg-white/50 backdrop-blur-lg shrink-0 z-[600]">
             <div class="flex flex-col">
-                <span id="user-name" class="label-style text-slate-400">Hi User</span>
+                <span class="label-style text-slate-400">Hi Matti</span>
                 <h1 id="main-title" class="text-3xl font-800 tracking-tight text-slate-900">Log</h1>
             </div>
-            <div class="flex items-center gap-2">
-                <div class="flex items-center bg-slate-100 p-1 rounded-2xl">
-                    <button onclick="setCurrency('EUR')" id="curr-EUR" class="px-4 py-2 rounded-xl text-[10px] font-800 transition-all bg-white text-blue-600 shadow-sm">EUR</button>
-                    <button onclick="setCurrency('CNY')" id="curr-CNY" class="px-4 py-2 rounded-xl text-[10px] font-800 transition-all text-slate-400">CNY</button>
-                </div>
-                <button id="logout-btn" class="p-3 text-slate-300 btn-press"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+            <div class="flex items-center bg-slate-100 p-1 rounded-2xl">
+                <button onclick="setCurrency('EUR')" id="curr-EUR" class="px-4 py-2 rounded-xl text-[10px] font-800 transition-all bg-white text-blue-600 shadow-sm">EUR</button>
+                <button onclick="setCurrency('CNY')" id="curr-CNY" class="px-4 py-2 rounded-xl text-[10px] font-800 transition-all text-slate-400">CNY</button>
             </div>
         </header>
 
         <main class="flex-1 overflow-y-auto px-6 pb-40 hide-scrollbar relative">
             <div id="tab-log" class="space-y-6 pt-4">
                 <div class="shell-card p-6 space-y-6">
-                    <form id="log-form" class="space-y-6">
+                    <form id="log-form" class="space-y-6" onsubmit="handleLog(event)">
                         <div class="flex items-center justify-between px-1">
-                            <span class="label-style text-slate-400">日期</span>
+                            <span class="label-style text-slate-400">Date</span>
                             <input type="date" id="log-date" class="text-[11px] font-800 text-blue-600 bg-slate-50 px-3 py-1.5 rounded-lg outline-none border-none">
                         </div>
+
                         <div class="space-y-1">
                             <div class="flex items-baseline gap-2 px-1">
                                 <span id="main-symbol" class="text-2xl font-800 text-blue-600">€</span>
                                 <input type="number" id="amount-input" step="0.01" required placeholder="0.00" oninput="calcConversion()" class="w-full bg-transparent text-5xl font-800 outline-none placeholder:text-slate-100 tracking-tighter text-slate-900">
                             </div>
-                            <div id="conversion-display" class="px-1 text-[11px] font-700 text-slate-300 transition-all opacity-0">约合 <span id="conv-val" class="text-slate-400">¥ 0.00</span></div>
+                            <div id="conversion-display" class="px-1 text-[11px] font-700 text-slate-300 transition-all opacity-0">Equivalent to <span id="conv-val" class="text-slate-400">¥ 0.00</span></div>
                         </div>
+
                         <div class="space-y-4">
                             <div class="flex gap-2 overflow-x-auto hide-scrollbar py-1" id="category-list"></div>
                             <div class="flex items-center bg-transparent p-4 rounded-2xl inner-stroke">
-                                <input type="text" id="desc-input" placeholder="备注内容..." class="w-full bg-transparent text-sm font-700 outline-none text-slate-700 placeholder:text-slate-300">
+                                <input type="text" id="desc-input" placeholder="Description..." class="w-full bg-transparent text-sm font-700 outline-none text-slate-700 placeholder:text-slate-300">
                             </div>
                         </div>
+
                         <div id="stock-container" class="space-y-2"></div>
+
                         <div class="flex items-center gap-3 pt-2">
                             <button type="button" onclick="addStockRow()" class="w-14 h-14 rounded-2xl border-1.5 border-dashed border-slate-200 flex items-center justify-center text-slate-300 btn-press"><i data-lucide="plus" class="w-6 h-6"></i></button>
-                            <button type="submit" id="save-btn" class="flex-1 bg-blue-600 text-white h-14 rounded-2xl text-[10px] font-800 uppercase tracking-[0.2em] shadow-lg shadow-blue-100 btn-press">保存记录</button>
+                            <button type="submit" id="save-btn" class="flex-1 bg-blue-600 text-white h-14 rounded-2xl text-[10px] font-800 uppercase tracking-[0.2em] shadow-lg shadow-blue-100 btn-press">Save</button>
                         </div>
                     </form>
                 </div>
                 <div class="space-y-4 pt-4 pb-10">
                     <div class="flex items-center justify-center px-2">
-                        <h3 class="label-style text-slate-300">最近记录</h3>
+                        <h3 class="label-style text-slate-300">Recent</h3>
                     </div>
                     <div id="recent-logs" class="space-y-3"></div>
                 </div>
@@ -138,26 +221,27 @@
             <div id="tab-calendar" class="hidden space-y-6 pt-4">
                 <div class="bg-transparent">
                     <div class="flex items-center justify-between px-2 py-4">
-                        <span id="current-month-label" class="label-style text-slate-900">Month</span>
+                        <span id="current-month-label" class="label-style text-slate-900">March 2024</span>
                         <div class="flex items-center gap-1">
                             <button id="month-prev" class="p-2 text-slate-400 btn-press"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
                             <button id="month-next" class="p-2 text-slate-400 btn-press"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
                         </div>
                     </div>
                     <div class="grid grid-cols-7 bg-slate-50/50 border-y border-slate-100">
-                        <span class="label-style py-2 text-center text-slate-300 scale-75">一</span>
-                        <span class="label-style py-2 text-center text-slate-300 scale-75">二</span>
-                        <span class="label-style py-2 text-center text-slate-300 scale-75">三</span>
-                        <span class="label-style py-2 text-center text-slate-300 scale-75">四</span>
-                        <span class="label-style py-2 text-center text-slate-300 scale-75">五</span>
-                        <span class="label-style py-2 text-center text-slate-300 scale-75">六</span>
-                        <span class="label-style py-2 text-center text-slate-300 scale-75">日</span>
+                        <span class="label-style py-2 text-center text-slate-300 scale-75">Mo</span>
+                        <span class="label-style py-2 text-center text-slate-300 scale-75">Tu</span>
+                        <span class="label-style py-2 text-center text-slate-300 scale-75">We</span>
+                        <span class="label-style py-2 text-center text-slate-300 scale-75">Th</span>
+                        <span class="label-style py-2 text-center text-slate-300 scale-75">Fr</span>
+                        <span class="label-style py-2 text-center text-slate-300 scale-75">Sa</span>
+                        <span class="label-style py-2 text-center text-slate-300 scale-75">Su</span>
                     </div>
                     <div id="calendar-days" class="calendar-grid"></div>
                 </div>
+
                 <div class="space-y-4 pb-10">
                     <div class="flex items-center justify-between px-2">
-                        <h3 id="selected-date-label" class="label-style text-slate-400">详情</h3>
+                        <h3 id="selected-date-label" class="label-style text-slate-400">Detail</h3>
                         <span id="selected-day-total" class="text-sm font-800 text-slate-900 tracking-tight">€ 0.00</span>
                     </div>
                     <div id="day-detail-list" class="space-y-3"></div>
@@ -166,8 +250,8 @@
 
             <div id="tab-other" class="hidden flex flex-col items-center justify-center py-24">
                 <div class="w-20 h-20 border-2 border-slate-100 rounded-[2rem] flex items-center justify-center mb-6"><i data-lucide="circle-dashed" class="w-8 h-8 text-slate-200"></i></div>
-                <h2 class="text-lg font-800 text-slate-900">即将推出</h2>
-                <button onclick="showTab('log')" class="mt-8 text-blue-600 text-[10px] font-800 uppercase tracking-widest">返回</button>
+                <h2 class="text-lg font-800 text-slate-900">Coming Soon</h2>
+                <button onclick="showTab('log')" class="mt-8 text-blue-600 text-[10px] font-800 uppercase tracking-widest">Back</button>
             </div>
         </main>
 
@@ -177,102 +261,49 @@
             <nav class="glass-nav h-16 w-[calc(100%-3rem)] max-w-[calc(448px-3rem)] rounded-[24px] flex items-center justify-around px-2 pointer-events-auto">
                 <button id="nav-log" onclick="showTab('log')" class="p-3 text-blue-600 btn-press"><i data-lucide="plus" class="w-5 h-5"></i></button>
                 <button id="nav-calendar" onclick="showTab('calendar')" class="p-3 text-slate-400 btn-press"><i data-lucide="calendar-days" class="w-5 h-5"></i></button>
-                <button onclick="showLocked()" class="p-3 text-slate-400 btn-press"><i data-lucide="compass" class="w-5 h-5"></i></button>
+                <button id="nav-other" onclick="showLocked()" class="p-3 text-slate-400 btn-press"><i data-lucide="compass" class="w-5 h-5"></i></button>
                 <button onclick="showLocked()" class="p-3 text-slate-400 btn-press"><i data-lucide="user-round" class="w-5 h-5"></i></button>
             </nav>
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Firebase Configuration (Environment Provided)
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'money-tracker-default';
-
+    <script>
         const CONFIG = {
             rate: 7.82,
+            storageKey: 'pj_logs_v4', // 确保Key一致
             categories: [
-                { id: 'food', name: '美食', colorClass: 'bg-food', textClass: 'color-food', hex: '#B2C9AB', icon: 'utensils' },
-                { id: 'traffic', name: '出行', colorClass: 'bg-traffic', textClass: 'color-traffic', hex: '#92A8D1', icon: 'car' },
-                { id: 'shop', name: '购物', colorClass: 'bg-shop', textClass: 'color-shop', hex: '#E2B4B4', icon: 'shopping-bag' },
-                { id: 'social', name: '社交', colorClass: 'bg-social', textClass: 'color-social', hex: '#C3B1E1', icon: 'users' },
-                { id: 'life', name: '居家', colorClass: 'bg-life', textClass: 'color-life', hex: '#DEB887', icon: 'home' },
-                { id: 'work', name: '工作', colorClass: 'bg-work', textClass: 'color-work', hex: '#96AD90', icon: 'briefcase' },
-                { id: 'other', name: '其他', colorClass: 'bg-other', textClass: 'color-other', hex: '#94a3b8', icon: 'more-horizontal' }
+                { id: 'food', name: 'Food', colorClass: 'bg-food', textClass: 'color-food', hex: '#B2C9AB', icon: 'utensils' },
+                { id: 'traffic', name: 'Traffic', colorClass: 'bg-traffic', textClass: 'color-traffic', hex: '#92A8D1', icon: 'car' },
+                { id: 'shop', name: 'Shop', colorClass: 'bg-shop', textClass: 'color-shop', hex: '#E2B4B4', icon: 'shopping-bag' },
+                { id: 'social', name: 'Social', colorClass: 'bg-social', textClass: 'color-social', hex: '#C3B1E1', icon: 'users' },
+                { id: 'life', name: 'Life', colorClass: 'bg-life', textClass: 'color-life', hex: '#DEB887', icon: 'home' },
+                { id: 'work', name: 'Work', colorClass: 'bg-work', textClass: 'color-work', hex: '#96AD90', icon: 'briefcase' },
+                { id: 'other', name: 'Other', colorClass: 'bg-other', textClass: 'color-other', hex: '#94a3b8', icon: 'more-horizontal' }
             ]
         };
 
+        // 从存储中加载数据
         let state = {
-            user: null,
-            currency: 'EUR',
-            selectedCategory: '美食',
-            logs: [],
+            currency: localStorage.getItem('pj_curr') || 'EUR',
+            selectedCategory: localStorage.getItem('pj_last_cat') || 'Food',
+            logs: JSON.parse(localStorage.getItem(CONFIG.storageKey) || '[]'),
             currentDate: new Date(),
             selectedDate: new Date(),
             pendingDeleteId: null
         };
 
-        // --- Auth Logic ---
-        const loginBtn = document.getElementById('login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const authOverlay = document.getElementById('auth-overlay');
-        const authLoading = document.getElementById('auth-loading');
-
-        loginBtn.onclick = async () => {
-            loginBtn.classList.add('hidden');
-            authLoading.classList.remove('hidden');
-            const provider = new GoogleAuthProvider();
-            try {
-                await signInWithPopup(auth, provider);
-            } catch (err) {
-                console.error(err);
-                loginBtn.classList.remove('hidden');
-                authLoading.classList.add('hidden');
-            }
-        };
-
-        logoutBtn.onclick = () => signOut(auth);
-
-        onAuthStateChanged(auth, (user) => {
-            state.user = user;
-            if (user) {
-                authOverlay.style.opacity = '0';
-                setTimeout(() => authOverlay.classList.add('hidden'), 300);
-                document.getElementById('user-name').innerText = `Hi ${user.displayName || 'User'}`;
-                syncData();
-            } else {
-                authOverlay.classList.remove('hidden');
-                authOverlay.style.opacity = '1';
-                loginBtn.classList.remove('hidden');
-                authLoading.classList.add('hidden');
-                state.logs = [];
-                renderRecent();
-            }
-        });
-
-        // --- Data Sync Logic (RULE 1 & 2) ---
-        function syncData() {
-            if (!state.user) return;
-            // Public-style structure as per mandate but scoped to user for privacy
-            const q = collection(db, 'artifacts', appId, 'users', state.user.uid, 'logs');
-            onSnapshot(q, (snapshot) => {
-                state.logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // Sort in memory (RULE 2)
-                state.logs.sort((a, b) => b.timestamp - a.timestamp);
-                renderRecent();
-                if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar();
-            }, (error) => console.error("Firestore Error:", error));
+        function saveToStorage() {
+            localStorage.setItem(CONFIG.storageKey, JSON.stringify(state.logs));
+            localStorage.setItem('pj_curr', state.currency);
+            localStorage.setItem('pj_last_cat', state.selectedCategory);
         }
 
-        // --- Core Functions ---
-        window.showTab = (tab) => {
+        function initFormDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('log-date').value = today;
+        }
+
+        function showTab(tab) {
             document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('[id^="nav-"]').forEach(el => el.classList.replace('text-blue-600', 'text-slate-400'));
             document.getElementById(`tab-${tab}`).classList.remove('hidden');
@@ -280,17 +311,26 @@
             const navBtn = document.getElementById(`nav-${tab}`);
             if (navBtn) navBtn.classList.replace('text-slate-400', 'text-blue-600');
             if(tab === 'calendar') renderCalendar();
-        };
+        }
 
-        window.setCurrency = (curr) => {
+        function showLocked() {
+            document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('[id^="nav-"]').forEach(el => el.classList.replace('text-blue-600', 'text-slate-400'));
+            document.getElementById('nav-other').classList.replace('text-slate-400', 'text-blue-600');
+            document.getElementById('tab-other').classList.remove('hidden');
+            document.getElementById('main-title').innerText = 'Explore';
+        }
+
+        function setCurrency(curr) {
             state.currency = curr;
+            saveToStorage();
             document.getElementById('curr-EUR').className = curr === 'EUR' ? "px-4 py-2 rounded-xl text-[10px] font-800 transition-all bg-white text-blue-600 shadow-sm" : "px-4 py-2 rounded-xl text-[10px] font-800 transition-all text-slate-400";
             document.getElementById('curr-CNY').className = curr === 'CNY' ? "px-4 py-2 rounded-xl text-[10px] font-800 transition-all bg-white text-blue-600 shadow-sm" : "px-4 py-2 rounded-xl text-[10px] font-800 transition-all text-slate-400";
             document.getElementById('main-symbol').innerText = curr === 'EUR' ? '€' : '¥';
             calcConversion();
-        };
+        }
 
-        window.calcConversion = () => {
+        function calcConversion() {
             const val = parseFloat(document.getElementById('amount-input').value) || 0;
             const display = document.getElementById('conversion-display');
             const convVal = document.getElementById('conv-val');
@@ -299,115 +339,158 @@
                 const result = state.currency === 'EUR' ? (val * CONFIG.rate) : (val / CONFIG.rate);
                 convVal.innerText = `${state.currency === 'EUR' ? '¥' : '€'} ${result.toFixed(2)}`;
             } else display.classList.replace('opacity-100', 'opacity-0');
-        };
+        }
 
-        window.renderCategories = () => {
+        function renderCategories() {
             const list = document.getElementById('category-list');
             list.innerHTML = CONFIG.categories.map(cat => {
                 const isActive = state.selectedCategory === cat.name;
-                return `<button type="button" onclick="selectCat('${cat.name}')" class="category-pill shrink-0 px-5 py-2 rounded-2xl ${isActive ? cat.colorClass : ''}">${cat.name}</button>`;
+                const activeClass = isActive ? cat.colorClass : '';
+                return `<button type="button" onclick="selectCat('${cat.name}')" class="category-pill shrink-0 px-5 py-2 rounded-2xl ${activeClass}">${cat.name}</button>`;
             }).join('');
-        };
-        window.selectCat = (cat) => { state.selectedCategory = cat; renderCategories(); };
+        }
 
-        window.addStockRow = () => {
+        function selectCat(cat) { 
+            state.selectedCategory = cat; 
+            saveToStorage();
+            renderCategories(); 
+        }
+
+        function addStockRow() {
             const container = document.getElementById('stock-container');
             const div = document.createElement('div');
             div.className = "flex gap-2 items-center bg-transparent p-3 rounded-2xl inner-stroke item-row";
             div.innerHTML = `
-                <input type="text" placeholder="品名" required class="item-name flex-1 bg-transparent text-xs font-700 outline-none px-1 text-slate-700">
-                <input type="text" placeholder="数量" class="item-qty w-16 bg-transparent text-xs font-800 outline-none text-right px-1 border-l">
-                <button type="button" onclick="this.parentElement.remove()" class="text-slate-300 pl-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+                <input type="text" placeholder="eg. eggs" required class="item-name flex-1 bg-transparent text-xs font-700 outline-none px-1 text-slate-700 placeholder:text-slate-300">
+                <input type="text" placeholder="1" class="item-qty w-16 bg-transparent text-xs font-800 outline-none text-right px-1 border-l border-slate-100">
+                <button type="button" onclick="this.parentElement.remove()" class="text-slate-300 hover:text-rose-400 pl-1"><i data-lucide="x" class="w-4 h-4"></i></button>
             `;
-            container.appendChild(div); lucide.createIcons();
-        };
+            container.appendChild(div); 
+            lucide.createIcons();
+        }
 
-        async function handleLog(e) {
+        function handleLog(e) {
             e.preventDefault();
-            if(!state.user) return;
             const val = parseFloat(document.getElementById('amount-input').value);
             if(!val) return;
             
-            const items = Array.from(document.querySelectorAll('.item-row')).map(row => ({
+            const itemRows = document.querySelectorAll('.item-row');
+            const items = Array.from(itemRows).map(row => ({
                 name: row.querySelector('.item-name').value,
                 qty: row.querySelector('.item-qty').value
             })).filter(i => i.name.trim() !== '');
 
+            const logDate = document.getElementById('log-date').value;
             const newEntry = {
+                id: Date.now(),
                 eurVal: state.currency === 'CNY' ? (val / CONFIG.rate) : val,
                 category: state.selectedCategory,
                 description: document.getElementById('desc-input').value,
                 items: items,
                 time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                dateString: document.getElementById('log-date').value,
-                timestamp: Date.now()
+                dateString: logDate
             };
             
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'users', state.user.uid, 'logs'), newEntry);
-                document.getElementById('log-form').reset();
-                document.getElementById('stock-container').innerHTML = '';
-                initFormDate();
-                calcConversion();
-            } catch (err) { console.error(err); }
+            state.logs.unshift(newEntry);
+            saveToStorage();
+            
+            document.getElementById('amount-input').value = '';
+            document.getElementById('desc-input').value = '';
+            document.getElementById('stock-container').innerHTML = '';
+            calcConversion();
+            renderRecent();
         }
 
-        function setupSwipe(el, id) {
+        let startX = 0;
+        function setupSwipe(el) {
             const content = el.querySelector('.swipe-content');
-            let sX = 0;
-            el.addEventListener('touchstart', e => { sX = e.touches[0].clientX; content.style.transition = 'none'; });
+            el.addEventListener('touchstart', e => { 
+                startX = e.touches[0].clientX; 
+                content.style.transition = 'none'; 
+            }, {passive: true});
+            
             el.addEventListener('touchmove', e => {
-                let d = sX - e.touches[0].clientX;
-                if (d > 0 && d < 120) content.style.transform = `translateX(-${d}px)`;
-            });
+                let diff = startX - e.touches[0].clientX;
+                if (diff > 0 && diff < 120) {
+                    content.style.transform = `translateX(-${diff}px)`;
+                } else if (diff <= 0) {
+                    content.style.transform = `translateX(0)`;
+                }
+            }, {passive: true});
+            
             el.addEventListener('touchend', e => {
                 content.style.transition = 'all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
-                let d = sX - e.changedTouches[0].clientX;
-                content.style.transform = d > 50 ? `translateX(-80px)` : `translateX(0)`;
+                let diff = startX - e.changedTouches[0].clientX;
+                if (diff > 50) {
+                    content.style.transform = `translateX(-80px)`;
+                } else {
+                    content.style.transform = `translateX(0)`;
+                }
             });
         }
 
-        window.openDeleteModal = (id) => { state.pendingDeleteId = id; document.getElementById('delete-modal').classList.add('active'); };
-        window.closeDeleteModal = () => { document.getElementById('delete-modal').classList.remove('active'); state.pendingDeleteId = null; };
+        function openDeleteModal(id) {
+            state.pendingDeleteId = id;
+            document.getElementById('delete-modal').classList.add('active');
+        }
 
-        document.getElementById('confirm-delete-btn').onclick = async () => {
-            if (state.pendingDeleteId && state.user) {
-                try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'users', state.user.uid, 'logs', state.pendingDeleteId));
-                    closeDeleteModal();
-                } catch (err) { console.error(err); }
+        function closeDeleteModal() {
+            document.getElementById('delete-modal').classList.remove('active');
+            state.pendingDeleteId = null;
+            renderRecent();
+            if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar();
+        }
+
+        document.getElementById('confirm-delete-btn').onclick = () => {
+            if (state.pendingDeleteId) {
+                state.logs = state.logs.filter(l => l.id !== state.pendingDeleteId);
+                saveToStorage();
+                closeDeleteModal();
             }
         };
 
         function renderRecent() {
             const list = document.getElementById('recent-logs');
-            list.innerHTML = state.logs.slice(0, 10).map(log => {
+            const sortedLogs = [...state.logs].sort((a, b) => b.id - a.id);
+            
+            list.innerHTML = sortedLogs.slice(0, 5).map(log => {
                 const catInfo = CONFIG.categories.find(c => c.name === log.category) || CONFIG.categories[6];
+                const hasItems = log.items && log.items.length > 0;
                 return `
                 <div class="swipe-container inner-stroke" data-id="${log.id}">
-                    <div class="swipe-action" onclick="openDeleteModal('${log.id}')"><i data-lucide="trash-2" class="w-5 h-5"></i></div>
+                    <div class="swipe-action" onclick="openDeleteModal(${log.id})"><i data-lucide="trash-2" class="w-5 h-5"></i></div>
                     <div class="swipe-content p-5 flex justify-between items-center">
                         <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-xl flex items-center justify-center ${catInfo.textClass}"><i data-lucide="${catInfo.icon}" class="w-5 h-5"></i></div>
+                            <div class="w-10 h-10 rounded-xl border border-slate-50 flex items-center justify-center ${catInfo.textClass}">
+                                <i data-lucide="${catInfo.icon}" class="w-5 h-5"></i>
+                            </div>
                             <div>
-                                <p class="text-sm font-700 text-slate-800">${log.description || log.category}</p>
-                                <p class="label-style"><span class="${catInfo.textClass}">${log.category}</span><span class="text-slate-300 mx-1">•</span><span class="text-slate-300">${log.dateString}</span></p>
+                                <p class="text-sm font-700 text-slate-800 flex items-center gap-1.5">
+                                    ${log.description || log.category}
+                                    ${hasItems ? '<i data-lucide="layers" class="w-3 h-3 text-slate-300"></i>' : ''}
+                                </p>
+                                <p class="label-style">
+                                    <span class="${catInfo.textClass}">${log.category}</span>
+                                    <span class="text-slate-300 mx-1">•</span>
+                                    <span class="text-slate-300">${log.dateString}</span>
+                                </p>
                             </div>
                         </div>
                         <p class="text-sm font-800 text-slate-900">€${log.eurVal.toFixed(2)}</p>
                     </div>
-                </div>`;
-            }).join('') || '<div class="py-8 text-center text-slate-200 label-style">暂无历史记录</div>';
-            document.querySelectorAll('.swipe-container').forEach(el => setupSwipe(el, el.dataset.id));
+                </div>
+            `}).join('') || '<div class="py-8 text-center text-slate-200 label-style">No History</div>';
+            
+            document.querySelectorAll('#recent-logs .swipe-container').forEach(setupSwipe);
             lucide.createIcons();
         }
 
-        window.renderCalendar = () => {
+        function renderCalendar() {
             const calDays = document.getElementById('calendar-days');
             const monthLabel = document.getElementById('current-month-label');
             const year = state.currentDate.getFullYear();
             const month = state.currentDate.getMonth();
-            monthLabel.innerText = new Intl.DateTimeFormat('zh-CN', { month: 'long', year: 'numeric' }).format(state.currentDate);
+            monthLabel.innerText = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(state.currentDate);
 
             let firstDay = new Date(year, month, 1).getDay();
             firstDay = firstDay === 0 ? 6 : firstDay - 1; 
@@ -415,66 +498,97 @@
 
             let html = '';
             for (let i = 0; i < firstDay; i++) html += '<div class="day-cell bg-slate-50/10"></div>';
+
             for (let d = 1; d <= daysInMonth; d++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 const dayLogs = state.logs.filter(l => l.dateString === dateStr);
                 const dayTotal = dayLogs.reduce((acc, l) => acc + l.eurVal, 0);
+                const hasDetailedItems = dayLogs.some(l => l.items && l.items.length > 0);
                 const isSelected = state.selectedDate.toISOString().split('T')[0] === dateStr;
                 const isToday = new Date().toISOString().split('T')[0] === dateStr;
-                const dotsHtml = dayLogs.map(log => `<div class="dot" style="background-color: ${(CONFIG.categories.find(c => c.name === log.category) || CONFIG.categories[6]).hex}"></div>`).join('');
+
+                const dotsHtml = dayLogs.map(log => {
+                    const catInfo = CONFIG.categories.find(c => c.name === log.category) || CONFIG.categories[6];
+                    return `<div class="dot" style="background-color: ${catInfo.hex}"></div>`;
+                }).join('');
+
                 html += `
-                    <div onclick="selectDate('${dateStr}')" class="day-cell active ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}">
+                    <div onclick="selectDate('${dateStr}')" 
+                         class="day-cell active ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''} ${hasDetailedItems ? 'has-items' : ''}">
                         <span class="text-xs font-700">${d}</span>
-                        ${dayTotal > 0 ? `<span class="text-[8px] font-800 mt-1 opacity-60">€${Math.round(dayTotal)}</span>` : ''}
+                        ${dayTotal > 0 ? `<span class="amount-dot text-[8px] font-800 mt-1 opacity-60">€${Math.round(dayTotal)}</span>` : ''}
                         <div class="dots-container">${dotsHtml}</div>
-                    </div>`;
+                    </div>
+                `;
             }
             calDays.innerHTML = html;
             renderDayDetail();
-        };
+        }
 
-        window.selectDate = (dateStr) => { state.selectedDate = new Date(dateStr); renderCalendar(); };
+        function selectDate(dateStr) {
+            state.selectedDate = new Date(dateStr);
+            renderCalendar();
+        }
 
         function renderDayDetail() {
             const dateStr = state.selectedDate.toISOString().split('T')[0];
             const filtered = state.logs.filter(l => l.dateString === dateStr);
             const total = filtered.reduce((acc, l) => acc + l.eurVal, 0);
-            document.getElementById('selected-date-label').innerText = dateStr;
+            document.getElementById('selected-date-label').innerText = state.selectedDate.toDateString().toUpperCase();
             document.getElementById('selected-day-total').innerText = `€ ${total.toFixed(2)}`;
             const list = document.getElementById('day-detail-list');
+            
             list.innerHTML = filtered.map(log => {
                 const catInfo = CONFIG.categories.find(c => c.name === log.category) || CONFIG.categories[6];
+                const hasItems = log.items && log.items.length > 0;
                 return `
                 <div class="swipe-container inner-stroke" data-id="${log.id}">
-                    <div class="swipe-action" onclick="openDeleteModal('${log.id}')"><i data-lucide="trash-2" class="w-5 h-5"></i></div>
+                    <div class="swipe-action" onclick="openDeleteModal(${log.id})"><i data-lucide="trash-2" class="w-5 h-5"></i></div>
                     <div class="swipe-content p-5 flex flex-col gap-3">
                         <div class="flex justify-between items-center">
                             <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-xl flex items-center justify-center ${catInfo.textClass}"><i data-lucide="${catInfo.icon}" class="w-5 h-5"></i></div>
+                                <div class="w-10 h-10 rounded-xl border border-slate-50 flex items-center justify-center ${catInfo.textClass}">
+                                    <i data-lucide="${catInfo.icon}" class="w-5 h-5"></i>
+                                </div>
                                 <div>
                                     <p class="text-sm font-700 text-slate-800">${log.description || log.category}</p>
-                                    <p class="label-style"><span class="${catInfo.textClass}">${log.category}</span><span class="text-slate-300 mx-1">•</span><span class="text-slate-300">${log.time}</span></p>
+                                    <p class="label-style">
+                                        <span class="${catInfo.textClass}">${log.category}</span>
+                                        <span class="text-slate-300 mx-1">•</span>
+                                        <span class="text-slate-300">${log.time}</span>
+                                    </p>
                                 </div>
                             </div>
                             <p class="text-sm font-800 text-slate-900">€${log.eurVal.toFixed(2)}</p>
                         </div>
-                        ${log.items && log.items.length ? `<div class="mt-1 border-t pt-3 space-y-1">${log.items.map(i => `<div class="flex justify-between text-[10px] font-600 text-slate-400 px-1"><span>${i.name}</span><span>${i.qty || ''}</span></div>`).join('')}</div>` : ''}
+                        ${hasItems ? `
+                            <div class="mt-1 border-t border-slate-50 pt-3 space-y-1">
+                                ${log.items.map(i => `
+                                    <div class="flex justify-between text-[10px] font-600 text-slate-400 px-1">
+                                        <span>${i.name}</span>
+                                        <span>${i.qty || ''}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
                     </div>
-                </div>`;
-            }).join('') || '<div class="py-12 text-center text-slate-200 label-style">当日无记录</div>';
-            document.querySelectorAll('#day-detail-list .swipe-container').forEach(el => setupSwipe(el, el.dataset.id));
+                </div>
+            `}).join('') || '<div class="py-12 text-center text-slate-200 label-style">No entries</div>';
+            
+            document.querySelectorAll('#day-detail-list .swipe-container').forEach(setupSwipe);
             lucide.createIcons();
         }
 
         document.getElementById('month-prev').onclick = (e) => { e.stopPropagation(); state.currentDate.setMonth(state.currentDate.getMonth() - 1); renderCalendar(); };
         document.getElementById('month-next').onclick = (e) => { e.stopPropagation(); state.currentDate.setMonth(state.currentDate.getMonth() + 1); renderCalendar(); };
 
-        function initFormDate() { document.getElementById('log-date').value = new Date().toISOString().split('T')[0]; }
-
-        initFormDate();
-        renderCategories();
-        document.getElementById('log-form').addEventListener('submit', handleLog);
-        lucide.createIcons();
+        window.onload = () => {
+            setCurrency(state.currency);
+            initFormDate();
+            renderCategories();
+            renderRecent();
+            lucide.createIcons();
+        };
     </script>
 </body>
 </html>
