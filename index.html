@@ -142,9 +142,28 @@
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         .modal-card { transform: scale(0.9); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .modal-overlay.active .modal-card { transform: scale(1); }
+
+        /* AI Loading Overlay */
+        #ai-loader {
+            position: fixed; inset: 0; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px);
+            z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .ai-pulse {
+            width: 80px; height: 80px; background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            border-radius: 30px; animation: pulse 2s infinite ease-in-out; display: flex; align-items: center; justify-content: center; color: white;
+        }
+        @keyframes pulse { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }
     </style>
 </head>
 <body class="select-none overflow-hidden">
+
+    <!-- AI 识别加载状态 -->
+    <div id="ai-loader">
+        <div class="ai-pulse shadow-2xl shadow-blue-200">
+            <i data-lucide="sparkles" class="w-10 h-10"></i>
+        </div>
+        <p class="mt-8 text-[11px] font-800 text-blue-600 uppercase tracking-[0.3em]">AI 正在识别小票...</p>
+    </div>
 
     <!-- 删除确认弹窗 -->
     <div id="delete-modal" class="modal-overlay">
@@ -188,9 +207,15 @@
                         </div>
 
                         <div class="space-y-1">
-                            <div class="flex items-baseline gap-2 px-1">
+                            <div class="flex items-center gap-2 px-1 relative">
                                 <span id="main-symbol" class="text-2xl font-800 text-blue-600">€</span>
-                                <input type="number" id="amount-input" step="0.01" required placeholder="0.00" oninput="calcConversion()" class="w-full bg-transparent text-5xl font-800 outline-none placeholder:text-slate-100 tracking-tighter text-slate-900">
+                                <input type="number" id="amount-input" step="0.01" required placeholder="0.00" oninput="calcConversion()" class="w-full bg-transparent text-5xl font-800 outline-none placeholder:text-slate-100 tracking-tighter text-slate-900 pr-12">
+                                
+                                <!-- AI 拍照按钮 -->
+                                <button type="button" onclick="document.getElementById('ai-camera-input').click()" class="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 btn-press">
+                                    <i data-lucide="camera" class="w-5 h-5"></i>
+                                </button>
+                                <input type="file" id="ai-camera-input" accept="image/*" capture="camera" class="hidden" onchange="processImage(this)">
                             </div>
                             <div id="conversion-display" class="px-1 text-[11px] font-700 text-slate-300 transition-all opacity-0">Equivalent to <span id="conv-val" class="text-slate-400">¥ 0.00</span></div>
                         </div>
@@ -270,7 +295,7 @@
     <script>
         const CONFIG = {
             rate: 7.82,
-            storageKey: 'pj_logs_v4', // 确保Key一致
+            storageKey: 'pj_logs_v4',
             categories: [
                 { id: 'food', name: 'Food', colorClass: 'bg-food', textClass: 'color-food', hex: '#B2C9AB', icon: 'utensils' },
                 { id: 'traffic', name: 'Traffic', colorClass: 'bg-traffic', textClass: 'color-traffic', hex: '#92A8D1', icon: 'car' },
@@ -282,7 +307,8 @@
             ]
         };
 
-        // 从存储中加载数据
+        const apiKey = ""; // 执行环境将提供此密钥
+
         let state = {
             currency: localStorage.getItem('pj_curr') || 'EUR',
             selectedCategory: localStorage.getItem('pj_last_cat') || 'Food',
@@ -356,17 +382,102 @@
             renderCategories(); 
         }
 
-        function addStockRow() {
+        function addStockRow(name = '', qty = '') {
             const container = document.getElementById('stock-container');
             const div = document.createElement('div');
             div.className = "flex gap-2 items-center bg-transparent p-3 rounded-2xl inner-stroke item-row";
             div.innerHTML = `
-                <input type="text" placeholder="eg. eggs" required class="item-name flex-1 bg-transparent text-xs font-700 outline-none px-1 text-slate-700 placeholder:text-slate-300">
-                <input type="text" placeholder="1" class="item-qty w-16 bg-transparent text-xs font-800 outline-none text-right px-1 border-l border-slate-100">
+                <input type="text" placeholder="e,g. eggs" required value="${name}" class="item-name flex-1 bg-transparent text-xs font-700 outline-none px-1 text-slate-700 placeholder:text-slate-300">
+                <input type="text" placeholder="1" value="${qty}" class="item-qty w-16 bg-transparent text-xs font-800 outline-none text-right px-1 border-l border-slate-100">
                 <button type="button" onclick="this.parentElement.remove()" class="text-slate-300 hover:text-rose-400 pl-1"><i data-lucide="x" class="w-4 h-4"></i></button>
             `;
             container.appendChild(div); 
             lucide.createIcons();
+        }
+
+        // --- AI 识别核心逻辑 ---
+        async function processImage(input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const reader = new FileReader();
+            
+            document.getElementById('ai-loader').style.display = 'flex';
+            
+            reader.onload = async (e) => {
+                const base64Data = e.target.result.split(',')[1];
+                try {
+                    const result = await callGeminiAI(base64Data);
+                    fillFormWithAI(result);
+                } catch (err) {
+                    console.error("AI 识别失败:", err);
+                } finally {
+                    document.getElementById('ai-loader').style.display = 'none';
+                    input.value = ""; 
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function callGeminiAI(base64Image) {
+            const prompt = `你是一个专业的小票分析助手。请分析这张小票图片，提取以下信息：
+            1. 总金额 (total_amount)
+            2. 消费描述 (description，例如：家乐福超市、星巴克等)
+            3. 分类 (category，从以下选项中选一个: Food, Traffic, Shop, Social, Life, Work, Other)
+            4. 商品清单 (items，包含商品名 name 和数量 qty)
+            请严格按 JSON 格式返回：
+            {
+              "total_amount": 0.00,
+              "description": "",
+              "category": "",
+              "items": [{"name": "", "qty": ""}]
+            }`;
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    { text: prompt },
+                                    { inlineData: { mimeType: "image/png", data: base64Image } }
+                                ]
+                            }],
+                            generationConfig: { responseMimeType: "application/json" }
+                        })
+                    });
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    return JSON.parse(text);
+                } catch (e) {
+                    if (i === 4) throw e;
+                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+                }
+            }
+        }
+
+        function fillFormWithAI(data) {
+            if (!data) return;
+            if (data.total_amount) {
+                document.getElementById('amount-input').value = data.total_amount;
+                calcConversion();
+            }
+            if (data.description) {
+                document.getElementById('desc-input').value = data.description;
+            }
+            if (data.category) {
+                const found = CONFIG.categories.find(c => c.name.toLowerCase() === data.category.toLowerCase());
+                if (found) selectCat(found.name);
+            }
+            if (data.items && data.items.length > 0) {
+                document.getElementById('stock-container').innerHTML = '';
+                data.items.forEach(item => {
+                    addStockRow(item.name, item.qty);
+                });
+            }
         }
 
         function handleLog(e) {
@@ -479,7 +590,7 @@
                         <p class="text-sm font-800 text-slate-900">€${log.eurVal.toFixed(2)}</p>
                     </div>
                 </div>
-            `}).join('') || '<div class="py-8 text-center text-slate-200 label-style">No History</div>';
+            `}).join('') || '<div class="py-8 text-center text-slate-200 label-style">无历史记录</div>';
             
             document.querySelectorAll('#recent-logs .swipe-container').forEach(setupSwipe);
             lucide.createIcons();
@@ -573,7 +684,7 @@
                         ` : ''}
                     </div>
                 </div>
-            `}).join('') || '<div class="py-12 text-center text-slate-200 label-style">No entries</div>';
+            `}).join('') || '<div class="py-12 text-center text-slate-200 label-style">无记录</div>';
             
             document.querySelectorAll('#day-detail-list .swipe-container').forEach(setupSwipe);
             lucide.createIcons();
