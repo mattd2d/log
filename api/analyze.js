@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   const { image } = req.body;
   
   // 环境变量兼容性处理
-  const API_KEY = process.env.GEMINI_API_KEY || process.env['Gemini API Key 1'];
+  const API_KEY = process.env.GEMINI_API_KEY || process.env['Gemini API Key'];
 
   if (!API_KEY) {
     return res.status(500).json({ message: 'API Key is not configured in Vercel environment variables.' });
