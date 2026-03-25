@@ -416,33 +416,67 @@
             lucide.createIcons();
         }
 
-        async function processImage(input) {
-            if (!input.files[0]) return;
-            const reader = new FileReader();
-            document.getElementById('ai-loader').style.display = 'flex';
-            reader.onload = async (e) => {
-                const base64Data = e.target.result.split(',')[1];
-                try {
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-                    const res = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: "Analyze receipt, translate description and items to English, return JSON: {total_amount, description, category, items:[{name, qty}]}" }, { inlineData: { mimeType: "image/png", data: base64Data } }] }],
-                            generationConfig: { responseMimeType: "application/json" }
-                        })
-                    });
-                    const data = await res.json();
-                    const result = JSON.parse(data.candidates[0].content.parts[0].text);
-                    if (result.total_amount) { document.getElementById('amount-input').value = result.total_amount; calcConversion(); }
-                    if (result.description) document.getElementById('desc-input').value = result.description;
-                    if (result.category) { const found = CONFIG.categories.find(c => c.name.toLowerCase() === result.category.toLowerCase()); if (found) selectCat(found.name); }
-                    if (result.items) { document.getElementById('stock-container').innerHTML = ''; result.items.forEach(i => addStockRow(i.name, i.qty)); }
-                } catch (err) { console.error(err); }
-                finally { document.getElementById('ai-loader').style.display = 'none'; input.value = ""; }
-            };
-            reader.readAsDataURL(input.files[0]);
+      async function processImage(input) {
+    if (!input.files[0]) return;
+    const reader = new FileReader();
+    const file = input.files[0]; // 获取文件对象
+    
+    document.getElementById('ai-loader').style.display = 'flex';
+    
+    reader.onload = async (e) => {
+        const base64Data = e.target.result.split(',')[1];
+        
+        try {
+            // 修正 1: 使用正确的模型 ID (1.5-flash 是目前最快最稳的)
+            const model = "gemini-1.5-flash"; 
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ 
+                        parts: [
+                            { text: "Analyze receipt, translate to English, return JSON: {total_amount, description, category, items:[{name, qty}]}" }, 
+                            { inlineData: { mimeType: file.type, data: base64Data } } // 修正 2: 动态获取 MIME 类型
+                        ] 
+                    }],
+                    generationConfig: { 
+                        responseMimeType: "application/json",
+                        temperature: 0.1 
+                    }
+                })
+            });
+
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+            const data = await res.json();
+            const result = JSON.parse(data.candidates[0].content.parts[0].text);
+            
+            // 修正 3: 增加容错逻辑，防止数据缺失导致页面崩溃
+            if (result.total_amount) { 
+                document.getElementById('amount-input').value = result.total_amount; 
+                calcConversion(); 
+            }
+            if (result.description) document.getElementById('desc-input').value = result.description;
+            if (result.category) { 
+                const found = CONFIG.categories.find(c => c.name.toLowerCase() === result.category.toLowerCase()); 
+                if (found) selectCat(found.name); 
+            }
+            if (result.items) { 
+                document.getElementById('stock-container').innerHTML = ''; 
+                result.items.forEach(i => addStockRow(i.name, i.qty)); 
+            }
+        } catch (err) { 
+            console.error("识别失败:", err);
+            alert("识别失败，请检查 API Key 或网络环境");
+        } finally { 
+            document.getElementById('ai-loader').style.display = 'none'; 
+            input.value = ""; 
         }
+    };
+    reader.readAsDataURL(file);
+}
 
         function handleLog(e) {
             e.preventDefault();
