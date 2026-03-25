@@ -157,15 +157,13 @@
 </head>
 <body class="select-none overflow-hidden">
 
-    <!-- AI Recognition Loading State -->
     <div id="ai-loader">
         <div class="ai-pulse shadow-2xl shadow-blue-200">
             <i data-lucide="sparkles" class="w-10 h-10"></i>
         </div>
-        <p class="mt-8 text-[11px] font-800 text-blue-600 uppercase tracking-[0.3em]">AI Recognizing Receipt...</p>
+        <p class="mt-8 text-[11px] font-800 text-blue-600 uppercase tracking-[0.3em]">AI Recognizing & Translating...</p>
     </div>
 
-    <!-- Delete Confirmation Modal -->
     <div id="delete-modal" class="modal-overlay">
         <div class="modal-card w-72 bg-white rounded-[2.5rem] p-8 shadow-2xl border border-slate-100">
             <div class="flex flex-col items-center text-center space-y-4">
@@ -211,7 +209,6 @@
                                 <span id="main-symbol" class="text-2xl font-800 text-blue-600">€</span>
                                 <input type="number" id="amount-input" step="0.01" required placeholder="0.00" oninput="calcConversion()" class="w-full bg-transparent text-5xl font-800 outline-none placeholder:text-slate-100 tracking-tighter text-slate-900 pr-12">
                                 
-                                <!-- AI Scan Button -->
                                 <button type="button" onclick="document.getElementById('ai-camera-input').click()" class="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 btn-press">
                                     <i data-lucide="camera" class="w-5 h-5"></i>
                                 </button>
@@ -307,7 +304,7 @@
             ]
         };
 
-        const apiKey = ""; 
+        const apiKey = ""; // Insert your key here
 
         let state = {
             currency: localStorage.getItem('pj_curr') || 'EUR',
@@ -395,7 +392,7 @@
             lucide.createIcons();
         }
 
-        // --- AI Recognition Logic ---
+        // --- AI LOGIC WITH AUTO-TRANSLATION ---
         async function processImage(input) {
             if (!input.files || !input.files[0]) return;
             const file = input.files[0];
@@ -409,7 +406,8 @@
                     const result = await callGeminiAI(base64Data);
                     fillFormWithAI(result);
                 } catch (err) {
-                    console.error("Recognition failed:", err);
+                    console.error("AI Error:", err);
+                    alert("Recognition failed: " + err.message);
                 } finally {
                     document.getElementById('ai-loader').style.display = 'none';
                     input.value = ""; 
@@ -419,44 +417,44 @@
         }
 
         async function callGeminiAI(base64Image) {
-            const prompt = `You are a professional receipt analysis assistant. Please analyze this receipt image and extract:
-            1. Total amount (total_amount)
-            2. Description (description, e.g., Carrefour, Starbucks)
-            3. Category (category, strictly from: Food, Traffic, Shop, Social, Life, Work, Other)
-            4. Itemized list (items, including name and qty)
-            Return strictly in JSON format:
+            const prompt = `You are a professional receipt analysis assistant. Analyze this receipt image and extract:
+            1. total_amount: Final amount (numerical).
+            2. description: Merchant name.
+            3. category: Pick one (Food, Traffic, Shop, Social, Life, Work, Other).
+            4. items: List with 'name' and 'qty'.
+            
+            CRITICAL: If the receipt is not in English, you MUST translate the 'description' and all 'items[].name' into English.
+            
+            Return ONLY a valid JSON:
             {
               "total_amount": 0.00,
-              "description": "",
-              "category": "",
-              "items": [{"name": "", "qty": ""}]
+              "description": "Translated Name",
+              "category": "Shop",
+              "items": [{"name": "Translated Item", "qty": "1"}]
             }`;
 
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
             
-            for (let i = 0; i < 5; i++) {
-                try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{
-                                parts: [
-                                    { text: prompt },
-                                    { inlineData: { mimeType: "image/png", data: base64Image } }
-                                ]
-                            }],
-                            generationConfig: { responseMimeType: "application/json" }
-                        })
-                    });
-                    const data = await response.json();
-                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                    return JSON.parse(text);
-                } catch (e) {
-                    if (i === 4) throw e;
-                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
-                }
-            }
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [
+                            { text: prompt },
+                            { inlineData: { mimeType: "image/png", data: base64Image } }
+                        ]
+                    }],
+                    generationConfig: { responseMimeType: "application/json" }
+                })
+            });
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) throw new Error("AI returned empty content");
+            
+            // Clean JSON string
+            const cleanJson = text.replace(/```json/g, "").replace(/```/g, "").trim();
+            return JSON.parse(cleanJson);
         }
 
         function fillFormWithAI(data) {
@@ -672,7 +670,7 @@
                     <p class="text-[11px] font-800 text-slate-900">€${log.eurVal.toFixed(2)}</p>
                 </div>
                 `;
-            }).join('') || '<div class="py-8 text-center text-slate-200 label-style">No records for this day</div>';
+            }).join('') || '<div class="py-8 text-center text-slate-200 label-style">No records</div>';
             lucide.createIcons();
         }
 
