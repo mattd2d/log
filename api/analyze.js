@@ -1,38 +1,46 @@
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
     
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return res.status(500).json({ error: 'Missing API KEY' });
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'Missing DEEPSEEK_API_KEY' });
 
     try {
         const { image } = JSON.parse(req.body);
         
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+        // DeepSeek 的标准 API 终点
+        const url = "https://api.deepseek.com/chat/completions";
         
         const response = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}` 
+            },
             body: JSON.stringify({
-                contents: [{
-                    parts: [
-                        { text: "Analyze this receipt. Return ONLY a plain JSON object: { \"total_amount\": number, \"description\": \"string\", \"items\": [{\"name\": \"string\", \"qty\": number}] }" },
-                        { inlineData: { mimeType: "image/png", data: image } }
-                    ]
-                }]
+                model: "deepseek-chat", // 如果你有视觉模型权限，请确认模型名称（如 deepseek-vl）
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            { type: "text", text: "Identify the total amount, description, and items from this receipt. Return ONLY JSON: { \"total_amount\": number, \"description\": string, \"items\": [{ \"name\": string, \"qty\": number }] }" },
+                            { type: "image_url", image_url: { "url": `data:image/png;base64,${image}` } }
+                        ]
+                    }
+                ],
+                response_format: { type: 'json_object' } // DeepSeek 支持强制 JSON
             })
         });
 
         const data = await response.json();
-
-        // 记录完整的响应到 Vercel 日志，以便最后排查
-        console.log("Gemini API Full Response:", JSON.stringify(data));
+        console.log("DeepSeek Response:", JSON.stringify(data));
 
         if (data.error) {
-            console.error("Google Error Details:", data.error);
-            return res.status(data.error.code || 500).json(data);
+            return res.status(500).json(data.error);
         }
 
-        res.status(200).json(data);
+        // DeepSeek 返回的格式是 data.choices[0].message.content
+        const content = data.choices[0].message.content;
+        res.status(200).json(JSON.parse(content));
     } catch (error) {
         console.error("Server Error:", error);
         res.status(500).json({ error: error.message });
