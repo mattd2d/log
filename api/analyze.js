@@ -1,22 +1,20 @@
 export default async function handler(req, res) {
-  // 设置跨域
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type'); // 建议加上这个
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
 
   const { image } = req.body;
-  
-  // 环境变量兼容性处理
-  const API_KEY = process.env.GEMINI_API_KEY || process.env['Gemini API Key'];
+  // 只认标准命名的变量
+  const API_KEY = process.env.GEMINI_API_KEY;
 
   if (!API_KEY) {
-    return res.status(500).json({ message: 'API Key is not configured in Vercel environment variables.' });
+    console.error("环境变量 GEMINI_API_KEY 未找到");
+    return res.status(500).json({ message: 'Vercel 后台未配置 GEMINI_API_KEY，请检查变量名并重新部署' });
   }
 
-  // 使用稳定的 flash 模型，2.5-flash-preview 可能不稳定，建议用 1.5-flash 或最新的稳定版
+  // 使用 1.5-flash，它是目前最稳定的版本
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
   try {
@@ -26,42 +24,23 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         contents: [{ 
           parts: [
-            // 重点：要求 AI 返回 items 数组，否则你的 Box 页面拿不到数据
-            { text: "Analyze this receipt. Return ONLY JSON: { \"total_amount\": number, \"description\": \"string\", \"category\": \"string\", \"items\": [{\"name\": \"string\", \"qty\": \"string\"}] }. Translate item names to English." }, 
+            { text: "Analyze receipt. Return JSON: { \"total_amount\": number, \"description\": \"string\", \"category\": \"string\", \"items\": [{\"name\":\"string\",\"qty\":\"string\"}] }" }, 
             { inlineData: { mimeType: "image/jpeg", data: image } } 
           ] 
         }],
-        // 强制要求输出 JSON 格式（Gemini 1.5+ 支持）
-        generationConfig: {
-            responseMimeType: "application/json"
-        }
+        generationConfig: { responseMimeType: "application/json" }
       })
     });
 
     const data = await response.json();
-    
-    if (!response.ok) return res.status(response.status).json(data);
+    if (!response.ok) {
+      console.error("Google API 错误:", data);
+      return res.status(response.status).json({ message: "Google API 报错: " + (data.error?.message || "未知错误") });
+    }
 
-    // 提取并清理 AI 返回的文本
-    let aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-    
-    // 如果没有配置 generationConfig，可能需要手动清理 markdown
-    aiText = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
-    
-    // 解析 JSON
-    const parsedData = JSON.parse(aiText);
-
-    // 数据清洗：确保字段名和你的前端脚本一致
-    const finalData = {
-        total_amount: parsedData.total_amount || parsedData.amount || 0,
-        description: parsedData.description || parsedData.desc || "",
-        category: parsedData.category || parsedData.cat || "Other",
-        items: parsedData.items || []
-    };
-
-    res.status(200).json(finalData);
-
+    const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    res.status(200).json(JSON.parse(aiText));
   } catch (error) {
-    res.status(500).json({ message: "Backend error: " + error.message });
+    res.status(500).json({ message: "后端执行出错: " + error.message });
   }
 }
