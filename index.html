@@ -15,7 +15,7 @@
             --shell-accent: #2563eb;
             --shell-text: #0f172a;
             --border-color: #e2e8f0;
-            --delete-red: #ef4444; /* 统一的红色 */
+            --delete-red: #ef4444;
         }
 
         .color-food { color: #B2C9AB !important; }
@@ -62,7 +62,7 @@
             overflow: hidden;
             border-radius: 2rem;
             transition: all 0.3s ease;
-            background: var(--delete-red); /* 背景纯红 */
+            background: var(--delete-red);
         }
         .swipe-content {
             position: relative;
@@ -103,7 +103,7 @@
             background: white;
             transition: all 0.2s;
         }
-        .day-cell.has-items { background: #f1f5f9; }
+        .day-cell.has-items { background: #f8fafc; }
         .day-cell.selected { background: var(--shell-accent) !important; color: white !important; }
         .day-cell.today { color: var(--shell-accent); font-weight: 800; }
 
@@ -174,7 +174,6 @@
         .icon-box-choice { aspect-ratio: 1/1; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: #f8fafc; color: #cbd5e1; border: 2px solid transparent; transition: all 0.2s; }
         .icon-box-choice.selected { background: #eff6ff; color: #3b82f6; border-color: #3b82f6; }
         
-        /* 关键修复：让 Used Up 的灰色和透明感只作用于内容，而不影响底色 */
         .used-up-dim { opacity: 0.45; filter: grayscale(1); }
     </style>
 </head>
@@ -217,19 +216,16 @@
                         <input type="number" id="edit-amount" step="0.01" class="w-full bg-transparent text-lg font-800 outline-none text-slate-900" oninput="checkForChanges()">
                     </div>
                 </div>
-
                 <div class="space-y-2">
                     <span class="label-style text-slate-300 ml-1">Category</span>
                     <div class="flex gap-2 overflow-x-auto hide-scrollbar pb-1" id="edit-category-list"></div>
                 </div>
-
                 <div class="space-y-2">
                     <span class="label-style text-slate-300 ml-1">Description</span>
                     <div class="bg-slate-50 p-4 rounded-2xl">
                         <input type="text" id="edit-desc" class="w-full bg-transparent text-sm font-700 outline-none text-slate-700" oninput="checkForChanges()">
                     </div>
                 </div>
-
                 <div class="space-y-2">
                     <div class="flex justify-between items-center ml-1">
                         <span class="label-style text-slate-300">Items</span>
@@ -238,7 +234,6 @@
                     <div id="edit-stock-container" class="space-y-2"></div>
                 </div>
             </div>
-
             <div class="pt-6 flex gap-3">
                 <button onclick="openDeleteModal(state.editingEntry.id); closeEditModal();" class="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center btn-press">
                     <i data-lucide="trash-2" class="w-5 h-5"></i>
@@ -254,25 +249,21 @@
                 <h3 class="label-style text-slate-400">Item Settings</h3>
                 <button onclick="closePantryEdit()" class="text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
-            
             <div class="flex-1 overflow-y-auto hide-scrollbar space-y-6 pr-1">
                 <div class="space-y-3">
                     <span class="label-style text-slate-300 ml-1">Icon</span>
                     <div class="grid grid-cols-6 gap-2" id="pantry-icon-grid"></div>
                 </div>
-
                 <div class="space-y-3">
                     <span class="label-style text-slate-300 ml-1">Color</span>
                     <div class="grid grid-cols-6 gap-2" id="pantry-color-grid"></div>
                 </div>
-
                 <div class="space-y-2">
                     <span class="label-style text-slate-300 ml-1">Item Name</span>
                     <div class="bg-slate-50 p-4 rounded-2xl">
                         <input type="text" id="pantry-edit-name" class="w-full bg-transparent text-sm font-700 outline-none text-slate-700" oninput="checkPantryChanges()">
                     </div>
                 </div>
-
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-2">
                         <span class="label-style text-slate-300 ml-1">Remaining</span>
@@ -284,7 +275,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="pt-6 flex gap-3">
                 <button id="pantry-delete-btn-left" class="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center btn-press">
                     <i data-lucide="trash-2" class="w-5 h-5"></i>
@@ -296,7 +286,7 @@
 
     <div id="app" class="flex flex-col h-screen max-w-md mx-auto relative overflow-hidden">
         
-        <header class="px-7 pt-14 pb-6 flex justify-between items-center bg-white/50 backdrop-blur-lg shrink-0 z-[600]">
+        <header class="px-7 pt-12 pb-6 flex justify-between items-center bg-white/50 backdrop-blur-lg shrink-0 z-[600]">
             <div class="flex flex-col">
                 <span class="label-style text-slate-400">Hi Matti</span>
                 <h1 id="main-title" class="text-3xl font-800 tracking-tight text-slate-900">Log</h1>
@@ -315,7 +305,6 @@
                             <span class="label-style text-slate-400">Date</span>
                             <input type="date" id="log-date" class="text-[11px] font-800 text-blue-600 bg-slate-50 px-3 py-1.5 rounded-lg outline-none">
                         </div>
-
                         <div class="space-y-1">
                             <div class="flex items-center gap-2 px-1 relative">
                                 <span id="main-symbol" class="text-2xl font-800 text-blue-600">€</span>
@@ -327,16 +316,13 @@
                             </div>
                             <div id="conversion-display" class="px-1 text-[11px] font-700 text-slate-300 transition-all opacity-0">Equivalent to <span id="conv-val" class="text-slate-400">¥ 0.00</span></div>
                         </div>
-
                         <div class="space-y-4">
                             <div class="flex gap-2 overflow-x-auto hide-scrollbar py-1" id="category-list"></div>
                             <div class="flex items-center bg-transparent p-4 rounded-2xl inner-stroke">
                                 <input type="text" id="desc-input" placeholder="Description..." class="w-full bg-transparent text-sm font-700 outline-none text-slate-700 placeholder:text-slate-300">
                             </div>
                         </div>
-
                         <div id="stock-container" class="space-y-2"></div>
-
                         <div class="flex items-center gap-3 pt-2">
                             <button type="button" onclick="addStockRow()" class="w-14 h-14 rounded-2xl border-1.5 border-dashed border-slate-200 flex items-center justify-center text-slate-300 btn-press"><i data-lucide="plus" class="w-6 h-6"></i></button>
                             <button type="submit" id="save-btn" class="flex-1 bg-blue-600 text-white h-14 rounded-2xl text-[12px] font-900 uppercase tracking-[0.2em] shadow-lg shadow-blue-100 btn-press">Save</button>
@@ -349,16 +335,19 @@
                 </div>
             </div>
 
-            <div id="tab-calendar" class="hidden space-y-6 pt-4">
+            <div id="tab-calendar" class="hidden space-y-4 pt-2">
                 <div class="bg-transparent">
-                    <div class="flex items-center justify-between px-2 py-4">
-                        <span id="current-month-label" class="label-style text-slate-900">March 2024</span>
+                    <div class="flex items-center justify-between px-2 py-2">
+                        <div class="flex flex-col">
+                            <span id="current-month-label" class="label-style text-slate-900">March 2024</span>
+                            <span id="month-total-stat" class="text-lg font-800 text-blue-600 tracking-tight mt-0.5">€ 0.00</span>
+                        </div>
                         <div class="flex items-center gap-1">
                             <button id="month-prev" class="p-2 text-slate-400 btn-press"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
                             <button id="month-next" class="p-2 text-slate-400 btn-press"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
                         </div>
                     </div>
-                    <div class="grid grid-cols-7 bg-slate-50/50 border-y border-slate-100">
+                    <div class="grid grid-cols-7 bg-slate-50/50 border-y border-slate-100 mt-2">
                         <span class="label-style py-2 text-center text-slate-300 scale-75">Mo</span>
                         <span class="label-style py-2 text-center text-slate-300 scale-75">Tu</span>
                         <span class="label-style py-2 text-center text-slate-300 scale-75">We</span>
@@ -383,9 +372,7 @@
                     <h3 class="label-style text-slate-400">My Stock</h3>
                     <p id="pantry-stats" class="text-[11px] font-700 text-slate-300 uppercase tracking-widest">Total 0 types of items</p>
                 </div>
-                
                 <div id="pantry-list" class="space-y-4"></div>
-
                 <div id="used-up-section" class="space-y-4 pb-10 hidden">
                     <div class="section-header pt-4">
                         <h3 class="label-style text-slate-300">Used Up</h3>
@@ -596,12 +583,9 @@
             const usedList = document.getElementById('used-up-list');
             const usedSection = document.getElementById('used-up-section');
             const stats = document.getElementById('pantry-stats');
-            
             const activeItems = state.pantry.filter(i => i.qty > 0);
             const usedItems = state.pantry.filter(i => i.qty <= 0);
-
             stats.innerText = `Total ${activeItems.length} types of items`;
-            
             if (activeItems.length === 0) {
                 list.innerHTML = `<div class="py-10 text-center text-slate-200 label-style italic">Box is empty</div>`;
             } else {
@@ -610,17 +594,13 @@
                     return createPantryItemHTML(item, originalIndex, false);
                 }).join('');
             }
-
             if (usedItems.length > 0) {
                 usedSection.classList.remove('hidden');
                 usedList.innerHTML = usedItems.map((item, index) => {
                     const originalIndex = state.pantry.indexOf(item);
                     return createPantryItemHTML(item, originalIndex, true);
                 }).join('');
-            } else {
-                usedSection.classList.add('hidden');
-            }
-
+            } else { usedSection.classList.add('hidden'); }
             document.querySelectorAll('#tab-pantry .swipe-container').forEach(setupSwipe);
             lucide.createIcons();
         }
@@ -629,8 +609,6 @@
             const progress = Math.min(100, (item.qty / item.max) * 100);
             const icon = item.customIcon || 'circle';
             const color = item.customColor || '#94a3b8';
-            
-            // 关键：这里我们将 used-up-dim 效果只加在 swipe-content 的子容器上，不让它影响父级和背景红色
             return `
             <div class="swipe-container inner-stroke" data-idx="${index}">
                 <div class="swipe-action" onclick="event.stopPropagation(); deletePantryItem(${index})"><i data-lucide="trash-2" class="w-5 h-5"></i></div>
@@ -660,12 +638,7 @@
             </div>`;
         }
 
-        function deletePantryItem(index) {
-            state.pantry.splice(index, 1);
-            saveToStorage();
-            renderPantry();
-        }
-
+        function deletePantryItem(index) { state.pantry.splice(index, 1); saveToStorage(); renderPantry(); }
         function updatePantryQty(index, delta) {
             state.pantry[index].qty += delta;
             if (state.pantry[index].qty < 0) state.pantry[index].qty = 0;
@@ -682,17 +655,8 @@
             document.getElementById('pantry-edit-name').value = item.name;
             document.getElementById('pantry-edit-qty').value = item.qty;
             document.getElementById('pantry-edit-max').value = item.max;
-            
-            state.originalPantryJson = JSON.stringify({
-                name: item.name,
-                qty: item.qty,
-                max: item.max,
-                icon: state.pantryTempIcon,
-                color: state.pantryTempColor
-            });
-            
+            state.originalPantryJson = JSON.stringify({ name: item.name, qty: item.qty, max: item.max, icon: state.pantryTempIcon, color: state.pantryTempColor });
             document.getElementById('pantry-delete-btn-left').onclick = () => { deletePantryItem(state.pantryEditingIdx); closePantryEdit(); };
-            
             renderPantryIconGrid();
             renderPantryColorGrid();
             checkPantryChanges();
@@ -740,10 +704,7 @@
 
         function savePantryItem() {
             const btn = document.getElementById('save-pantry-btn');
-            if (btn.innerText === "Back") {
-                closePantryEdit();
-                return;
-            }
+            if (btn.innerText === "Back") { closePantryEdit(); return; }
             const item = state.pantry[state.pantryEditingIdx];
             item.name = document.getElementById('pantry-edit-name').value;
             item.qty = parseInt(document.getElementById('pantry-edit-qty').value) || 0;
@@ -754,7 +715,6 @@
             closePantryEdit();
             renderPantry();
         }
-
         function closePantryEdit() { document.getElementById('pantry-edit-modal').classList.remove('active'); }
 
         function openEdit(id) {
@@ -796,7 +756,6 @@
             const currentDesc = document.getElementById('edit-desc').value;
             const currentObj = { ...state.editingEntry, eurVal: currentAmount, description: currentDesc };
             const isDifferent = JSON.stringify(currentObj) !== state.originalEntryJson;
-            
             const btn = document.getElementById('save-edit-btn');
             if (isDifferent) {
                 btn.innerText = "Save Changes";
@@ -811,51 +770,28 @@
 
         function saveEdit() {
             const btn = document.getElementById('save-edit-btn');
-            if (btn.innerText === "Back") {
-                closeEditModal();
-                return;
-            }
-
+            if (btn.innerText === "Back") { closeEditModal(); return; }
             const oldEntry = JSON.parse(state.originalEntryJson);
             const newAmount = parseFloat(document.getElementById('edit-amount').value) || 0;
             const newDesc = document.getElementById('edit-desc').value;
             const newItems = state.editingEntry.items;
-
-            // 逻辑：更新 Pantry 数量变动
             oldEntry.items.forEach(oldItem => {
                 const target = state.pantry.find(p => p.name.toLowerCase() === oldItem.name.toLowerCase());
                 if(target) target.qty -= (parseFloat(oldItem.qty) || 0);
             });
-
             newItems.forEach(newItem => {
                 const qtyVal = parseFloat(newItem.qty) || 0;
                 const target = state.pantry.find(p => p.name.toLowerCase() === newItem.name.toLowerCase());
-                if(target) {
-                    target.qty += qtyVal;
-                    target.max = Math.max(target.max, target.qty);
-                } else if(newItem.name.trim() !== '') {
-                    state.pantry.push({
-                        name: newItem.name,
-                        qty: qtyVal,
-                        max: qtyVal,
-                        customIcon: 'circle',
-                        customColor: '#94a3b8'
-                    });
+                if(target) { target.qty += qtyVal; target.max = Math.max(target.max, target.qty); }
+                else if(newItem.name.trim() !== '') {
+                    state.pantry.push({ name: newItem.name, qty: qtyVal, max: qtyVal, customIcon: 'circle', customColor: '#94a3b8' });
                 }
             });
-
             state.pantry.forEach(p => { if(p.qty < 0) p.qty = 0; });
-
             const idx = state.logs.findIndex(l => l.id === state.editingEntry.id);
             if(idx !== -1) {
-                state.logs[idx] = {
-                    ...state.editingEntry,
-                    eurVal: newAmount,
-                    description: newDesc
-                };
-                saveToStorage();
-                closeEditModal();
-                renderRecent();
+                state.logs[idx] = { ...state.editingEntry, eurVal: newAmount, description: newDesc };
+                saveToStorage(); closeEditModal(); renderRecent();
                 if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar();
                 if(!document.getElementById('tab-pantry').classList.contains('hidden')) renderPantry();
             }
@@ -876,7 +812,7 @@
                             <div class="w-10 h-10 rounded-xl border border-slate-50 flex items-center justify-center ${cat.textClass}"><i data-lucide="${cat.icon}" class="w-5 h-5"></i></div>
                             <div>
                                 <p class="text-sm font-700 text-slate-800">${log.description || log.category}</p>
-                                <p class="label-style"><span class="${cat.textClass}">${log.category}</span><span class="text-slate-300 mx-1">•</span><span class="text-slate-300">${log.time}</span></p>
+                                <p class="label-style"><span class="${cat.textClass}">${log.category}</span><span class="text-slate-300 mx-1">•</span><span class="text-slate-300">${log.dateString}</span></p>
                             </div>
                         </div>
                         <p class="text-sm font-800 text-slate-900">€${log.eurVal.toFixed(2)}</p>
@@ -914,16 +850,11 @@
                 if(logToDelete) {
                     logToDelete.items.forEach(item => {
                         const target = state.pantry.find(p => p.name.toLowerCase() === item.name.toLowerCase());
-                        if(target) {
-                            target.qty -= (parseFloat(item.qty) || 0);
-                            if(target.qty < 0) target.qty = 0;
-                        }
+                        if(target) { target.qty -= (parseFloat(item.qty) || 0); if(target.qty < 0) target.qty = 0; }
                     });
                 }
                 state.logs = state.logs.filter(l => l.id !== state.pendingDeleteId); 
-                saveToStorage(); 
-                closeDeleteModal(); 
-                renderRecent(); 
+                saveToStorage(); closeDeleteModal(); renderRecent(); 
                 if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar();
                 if(!document.getElementById('tab-pantry').classList.contains('hidden')) renderPantry();
             } 
@@ -940,13 +871,22 @@
             const cal = document.getElementById('calendar-days');
             const y = state.currentDate.getFullYear(), m = state.currentDate.getMonth();
             document.getElementById('current-month-label').innerText = `${new Intl.DateTimeFormat('en-US',{month:'long'}).format(state.currentDate)} ${y}`;
+            
+            // 统计月度支出
+            const monthPrefix = `${y}-${String(m+1).padStart(2,'0')}`;
+            const monthLogs = state.logs.filter(l => l.dateString.startsWith(monthPrefix));
+            const monthTotal = monthLogs.reduce((acc, curr) => acc + curr.eurVal, 0);
+            document.getElementById('month-total-stat').innerText = `€ ${monthTotal.toFixed(2)}`;
+
             const first = (new Date(y, m, 1).getDay() + 6) % 7, days = new Date(y, m+1, 0).getDate();
             cal.innerHTML = '';
             for(let i=0; i<first; i++) cal.innerHTML += `<div class="day-cell opacity-20"></div>`;
             for(let d=1; d<=days; d++) {
                 const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 const dl = state.logs.filter(l => l.dateString === ds);
-                const isSel = state.selectedDate.toDateString() === new Date(y,m,d).toDateString();
+                // 修复逻辑：使用 y,m,d 构建本地日期进行比对
+                const dayDate = new Date(y, m, d);
+                const isSel = state.selectedDate.getFullYear() === y && state.selectedDate.getMonth() === m && state.selectedDate.getDate() === d;
                 const dots = dl.length ? `<div class="dots-container">${[...new Set(dl.map(l=>l.category))].slice(0,3).map(c=>`<div class="dot" style="background:${CONFIG.categories.find(cat=>cat.name===c)?.hex}"></div>`).join('')}</div>` : '';
                 cal.innerHTML += `<div onclick="state.selectedDate=new Date(${y},${m},${d}); renderCalendar()" class="day-cell ${isSel?'selected':''} ${dl.length?'has-items':''}"><span class="text-xs font-800">${d}</span>${dots}</div>`;
             }
@@ -954,7 +894,10 @@
         }
 
         function renderDayDetail() {
-            const ds = state.selectedDate.toISOString().split('T')[0];
+            const y = state.selectedDate.getFullYear();
+            const m = state.selectedDate.getMonth() + 1;
+            const d = state.selectedDate.getDate();
+            const ds = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const dl = state.logs.filter(l => l.dateString === ds);
             document.getElementById('selected-date-label').innerText = state.selectedDate.toLocaleDateString('en-US', {month:'long', day:'numeric'});
             document.getElementById('selected-day-total').innerText = `€ ${dl.reduce((a,b)=>a+b.eurVal,0).toFixed(2)}`;
@@ -963,8 +906,8 @@
             lucide.createIcons();
         }
 
-        document.getElementById('month-prev').onclick = () => { state.currentDate.setMonth(m => m-1); renderCalendar(); };
-        document.getElementById('month-next').onclick = () => { state.currentDate.setMonth(m => m+1); renderCalendar(); };
+        document.getElementById('month-prev').onclick = () => { state.currentDate.setMonth(state.currentDate.getMonth() - 1); renderCalendar(); };
+        document.getElementById('month-next').onclick = () => { state.currentDate.setMonth(state.currentDate.getMonth() + 1); renderCalendar(); };
         window.onload = () => { initFormDate(); renderCategories(); renderRecent(); setCurrency(state.currency); lucide.createIcons(); };
     </script>
 </body>
