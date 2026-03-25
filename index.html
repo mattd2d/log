@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -157,15 +157,15 @@
 </head>
 <body class="select-none overflow-hidden">
 
-    <!-- AI 识别加载状态 -->
+    <!-- AI Recognition Loading State -->
     <div id="ai-loader">
         <div class="ai-pulse shadow-2xl shadow-blue-200">
             <i data-lucide="sparkles" class="w-10 h-10"></i>
         </div>
-        <p class="mt-8 text-[11px] font-800 text-blue-600 uppercase tracking-[0.3em]">Recognizing...</p>
+        <p class="mt-8 text-[11px] font-800 text-blue-600 uppercase tracking-[0.3em]">AI Recognizing Receipt...</p>
     </div>
 
-    <!-- 删除确认弹窗 -->
+    <!-- Delete Confirmation Modal -->
     <div id="delete-modal" class="modal-overlay">
         <div class="modal-card w-72 bg-white rounded-[2.5rem] p-8 shadow-2xl border border-slate-100">
             <div class="flex flex-col items-center text-center space-y-4">
@@ -173,12 +173,12 @@
                     <i data-lucide="trash-2" class="w-7 h-7"></i>
                 </div>
                 <div>
-                    <h4 class="text-slate-900 font-800 text-lg">Are you sure to delete？</h4>
-                    <p class="text-slate-400 text-xs font-600 mt-1 leading-relaxed">This will be deleted forever.</p>
+                    <h4 class="text-slate-900 font-800 text-lg">Are you sure?</h4>
+                    <p class="text-slate-400 text-xs font-600 mt-1 leading-relaxed">This record will be permanently removed.</p>
                 </div>
                 <div class="flex flex-col w-full gap-2 pt-2">
-                    <button id="confirm-delete-btn" class="w-full py-4 bg-rose-400 text-white text-[10px] font-800 uppercase tracking-widest rounded-2xl btn-press">删除</button>
-                    <button onclick="closeDeleteModal()" class="w-full py-4 bg-slate-50 text-slate-400 text-[10px] font-800 uppercase tracking-widest rounded-2xl btn-press">取消</button>
+                    <button id="confirm-delete-btn" class="w-full py-4 bg-rose-400 text-white text-[10px] font-800 uppercase tracking-widest rounded-2xl btn-press">Delete</button>
+                    <button onclick="closeDeleteModal()" class="w-full py-4 bg-slate-50 text-slate-400 text-[10px] font-800 uppercase tracking-widest rounded-2xl btn-press">Cancel</button>
                 </div>
             </div>
         </div>
@@ -211,7 +211,7 @@
                                 <span id="main-symbol" class="text-2xl font-800 text-blue-600">€</span>
                                 <input type="number" id="amount-input" step="0.01" required placeholder="0.00" oninput="calcConversion()" class="w-full bg-transparent text-5xl font-800 outline-none placeholder:text-slate-100 tracking-tighter text-slate-900 pr-12">
                                 
-                                <!-- AI 拍照按钮 -->
+                                <!-- AI Scan Button -->
                                 <button type="button" onclick="document.getElementById('ai-camera-input').click()" class="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 btn-press">
                                     <i data-lucide="camera" class="w-5 h-5"></i>
                                 </button>
@@ -307,7 +307,7 @@
             ]
         };
 
-        const apiKey = "AIzaSyDlvy4zbQiQGdUwoeytCn-IAj5l37FKkN4"; // 执行环境将提供此密钥
+        const apiKey = ""; 
 
         let state = {
             currency: localStorage.getItem('pj_curr') || 'EUR',
@@ -387,7 +387,7 @@
             const div = document.createElement('div');
             div.className = "flex gap-2 items-center bg-transparent p-3 rounded-2xl inner-stroke item-row";
             div.innerHTML = `
-                <input type="text" placeholder="eg. eggs" required value="${name}" class="item-name flex-1 bg-transparent text-xs font-700 outline-none px-1 text-slate-700 placeholder:text-slate-300">
+                <input type="text" placeholder="e.g. Eggs" required value="${name}" class="item-name flex-1 bg-transparent text-xs font-700 outline-none px-1 text-slate-700 placeholder:text-slate-300">
                 <input type="text" placeholder="1" value="${qty}" class="item-qty w-16 bg-transparent text-xs font-800 outline-none text-right px-1 border-l border-slate-100">
                 <button type="button" onclick="this.parentElement.remove()" class="text-slate-300 hover:text-rose-400 pl-1"><i data-lucide="x" class="w-4 h-4"></i></button>
             `;
@@ -395,7 +395,7 @@
             lucide.createIcons();
         }
 
-        // --- AI 识别核心逻辑 ---
+        // --- AI Recognition Logic ---
         async function processImage(input) {
             if (!input.files || !input.files[0]) return;
             const file = input.files[0];
@@ -409,7 +409,7 @@
                     const result = await callGeminiAI(base64Data);
                     fillFormWithAI(result);
                 } catch (err) {
-                    console.error("Error:", err);
+                    console.error("Recognition failed:", err);
                 } finally {
                     document.getElementById('ai-loader').style.display = 'none';
                     input.value = ""; 
@@ -419,20 +419,18 @@
         }
 
         async function callGeminiAI(base64Image) {
-            const prompt = `You are a professional receipt analysis assistant. Analyze the provided receipt image and extract the following information into a structured JSON format:
-
-1. total_amount: The final amount paid (numerical value only).
-2. description: The name of the merchant or store (e.g., "Carrefour", "Starbucks").
-3. category: Strictly set this to "Shop".
-4. items: A list of purchased products. Translate each product name into Chinese. Include the quantity (qty) if available; otherwise, default to "1".
-
-Return ONLY a valid JSON object in the following structure, without any additional text or markdown:
-{
-  "total_amount": 0.00,
-  "description": "",
-  "category": "Shop",
-  "items": [{"name": "商品名称", "qty": "1"}]
-}`;
+            const prompt = `You are a professional receipt analysis assistant. Please analyze this receipt image and extract:
+            1. Total amount (total_amount)
+            2. Description (description, e.g., Carrefour, Starbucks)
+            3. Category (category, strictly from: Food, Traffic, Shop, Social, Life, Work, Other)
+            4. Itemized list (items, including name and qty)
+            Return strictly in JSON format:
+            {
+              "total_amount": 0.00,
+              "description": "",
+              "category": "",
+              "items": [{"name": "", "qty": ""}]
+            }`;
 
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
             
@@ -592,7 +590,7 @@ Return ONLY a valid JSON object in the following structure, without any addition
                         <p class="text-sm font-800 text-slate-900">€${log.eurVal.toFixed(2)}</p>
                     </div>
                 </div>
-            `}).join('') || '<div class="py-8 text-center text-slate-200 label-style">无历史记录</div>';
+            `}).join('') || '<div class="py-8 text-center text-slate-200 label-style">No History</div>';
             
             document.querySelectorAll('#recent-logs .swipe-container').forEach(setupSwipe);
             lucide.createIcons();
@@ -603,103 +601,95 @@ Return ONLY a valid JSON object in the following structure, without any addition
             const monthLabel = document.getElementById('current-month-label');
             const year = state.currentDate.getFullYear();
             const month = state.currentDate.getMonth();
-            monthLabel.innerText = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(state.currentDate);
-
-            let firstDay = new Date(year, month, 1).getDay();
-            firstDay = firstDay === 0 ? 6 : firstDay - 1; 
+            const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            
+            monthLabel.innerText = `${months[month]} ${year}`;
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
             const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            calDays.innerHTML = '';
+            for(let i=0; i<adjustedFirstDay; i++) {
+                calDays.innerHTML += `<div class="day-cell opacity-20"></div>`;
+            }
 
-            let html = '';
-            for (let i = 0; i < firstDay; i++) html += '<div class="day-cell bg-slate-50/10"></div>';
+            for(let d=1; d<=daysInMonth; d++) {
+                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const dailyLogs = state.logs.filter(l => l.dateString === dateStr);
+                const isToday = new Date().toDateString() === new Date(year, month, d).toDateString();
+                const isSelected = state.selectedDate.toDateString() === new Date(year, month, d).toDateString();
+                
+                let dots = '';
+                if(dailyLogs.length > 0) {
+                    const uniqueCats = [...new Set(dailyLogs.map(l => l.category))].slice(0, 3);
+                    dots = `<div class="dots-container">${uniqueCats.map(c => {
+                        const info = CONFIG.categories.find(cat => cat.name === c);
+                        return `<div class="dot" style="background:${info?.hex || '#ccc'}"></div>`;
+                    }).join('')}</div>`;
+                }
 
-            for (let d = 1; d <= daysInMonth; d++) {
-                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                const dayLogs = state.logs.filter(l => l.dateString === dateStr);
-                const dayTotal = dayLogs.reduce((acc, l) => acc + l.eurVal, 0);
-                const hasDetailedItems = dayLogs.some(l => l.items && l.items.length > 0);
-                const isSelected = state.selectedDate.toISOString().split('T')[0] === dateStr;
-                const isToday = new Date().toISOString().split('T')[0] === dateStr;
-
-                const dotsHtml = dayLogs.map(log => {
-                    const catInfo = CONFIG.categories.find(c => c.name === log.category) || CONFIG.categories[6];
-                    return `<div class="dot" style="background-color: ${catInfo.hex}"></div>`;
-                }).join('');
-
-                html += `
-                    <div onclick="selectDate('${dateStr}')" 
-                         class="day-cell active ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''} ${hasDetailedItems ? 'has-items' : ''}">
-                        <span class="text-xs font-700">${d}</span>
-                        ${dayTotal > 0 ? `<span class="amount-dot text-[8px] font-800 mt-1 opacity-60">€${Math.round(dayTotal)}</span>` : ''}
-                        <div class="dots-container">${dotsHtml}</div>
+                calDays.innerHTML += `
+                    <div onclick="selectDate(${year}, ${month}, ${d})" class="day-cell ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''} ${dailyLogs.length > 0 ? 'has-items' : ''}">
+                        <span class="text-xs font-800">${d}</span>
+                        ${dots}
                     </div>
                 `;
             }
-            calDays.innerHTML = html;
             renderDayDetail();
         }
 
-        function selectDate(dateStr) {
-            state.selectedDate = new Date(dateStr);
+        function selectDate(y, m, d) {
+            state.selectedDate = new Date(y, m, d);
             renderCalendar();
         }
 
         function renderDayDetail() {
-            const dateStr = state.selectedDate.toISOString().split('T')[0];
-            const filtered = state.logs.filter(l => l.dateString === dateStr);
-            const total = filtered.reduce((acc, l) => acc + l.eurVal, 0);
-            document.getElementById('selected-date-label').innerText = state.selectedDate.toDateString().toUpperCase();
-            document.getElementById('selected-day-total').innerText = `€ ${total.toFixed(2)}`;
+            const label = document.getElementById('selected-date-label');
+            const total = document.getElementById('selected-day-total');
             const list = document.getElementById('day-detail-list');
             
-            list.innerHTML = filtered.map(log => {
-                const catInfo = CONFIG.categories.find(c => c.name === log.category) || CONFIG.categories[6];
-                const hasItems = log.items && log.items.length > 0;
-                return `
-                <div class="swipe-container inner-stroke" data-id="${log.id}">
-                    <div class="swipe-action" onclick="openDeleteModal(${log.id})"><i data-lucide="trash-2" class="w-5 h-5"></i></div>
-                    <div class="swipe-content p-5 flex flex-col gap-3">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-xl border border-slate-50 flex items-center justify-center ${catInfo.textClass}">
-                                    <i data-lucide="${catInfo.icon}" class="w-5 h-5"></i>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-700 text-slate-800">${log.description || log.category}</p>
-                                    <p class="label-style">
-                                        <span class="${catInfo.textClass}">${log.category}</span>
-                                        <span class="text-slate-300 mx-1">•</span>
-                                        <span class="text-slate-300">${log.time}</span>
-                                    </p>
-                                </div>
-                            </div>
-                            <p class="text-sm font-800 text-slate-900">€${log.eurVal.toFixed(2)}</p>
-                        </div>
-                        ${hasItems ? `
-                            <div class="mt-1 border-t border-slate-50 pt-3 space-y-1">
-                                ${log.items.map(i => `
-                                    <div class="flex justify-between text-[10px] font-600 text-slate-400 px-1">
-                                        <span>${i.name}</span>
-                                        <span>${i.qty || ''}</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-            `}).join('') || '<div class="py-12 text-center text-slate-200 label-style">无记录</div>';
+            const dateStr = state.selectedDate.toISOString().split('T')[0];
+            const dailyLogs = state.logs.filter(l => l.dateString === dateStr);
+            const sum = dailyLogs.reduce((a, b) => a + b.eurVal, 0);
+
+            label.innerText = state.selectedDate.toLocaleDateString('en-US', {month: 'long', day: 'numeric'});
+            total.innerText = `€ ${sum.toFixed(2)}`;
             
-            document.querySelectorAll('#day-detail-list .swipe-container').forEach(setupSwipe);
+            list.innerHTML = dailyLogs.map(log => {
+                const catInfo = CONFIG.categories.find(c => c.name === log.category) || CONFIG.categories[6];
+                return `
+                <div class="p-4 bg-white rounded-2xl inner-stroke flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center ${catInfo.textClass}">
+                            <i data-lucide="${catInfo.icon}" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-[11px] font-800 text-slate-800">${log.description || log.category}</p>
+                            <p class="text-[9px] font-700 text-slate-300 uppercase">${log.time}</p>
+                        </div>
+                    </div>
+                    <p class="text-[11px] font-800 text-slate-900">€${log.eurVal.toFixed(2)}</p>
+                </div>
+                `;
+            }).join('') || '<div class="py-8 text-center text-slate-200 label-style">No records for this day</div>';
             lucide.createIcons();
         }
 
-        document.getElementById('month-prev').onclick = (e) => { e.stopPropagation(); state.currentDate.setMonth(state.currentDate.getMonth() - 1); renderCalendar(); };
-        document.getElementById('month-next').onclick = (e) => { e.stopPropagation(); state.currentDate.setMonth(state.currentDate.getMonth() + 1); renderCalendar(); };
+        document.getElementById('month-prev').onclick = () => {
+            state.currentDate.setMonth(state.currentDate.getMonth() - 1);
+            renderCalendar();
+        };
+        document.getElementById('month-next').onclick = () => {
+            state.currentDate.setMonth(state.currentDate.getMonth() + 1);
+            renderCalendar();
+        };
 
         window.onload = () => {
-            setCurrency(state.currency);
             initFormDate();
             renderCategories();
             renderRecent();
+            setCurrency(state.currency);
             lucide.createIcons();
         };
     </script>
