@@ -74,10 +74,11 @@
 
         .year-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--border-color); border-left: 1px solid var(--border-color); background: white; }
         .year-month { border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 8px; }
-        .year-mini-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-        .year-day { width: 100%; height: 12px; display: flex; align-items: center; justify-content: center; font-size: 8.5px; font-weight: 500; color: #64748b; }
-        .year-day.hl { border-radius: 999px; font-weight: 500; }
-        .year-day.today { border-radius: 999px; background: var(--theme-color); color: white; font-weight: 500; }
+        .year-mini-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; }
+        .year-day-btn { width: 100%; height: 16px; display: flex; align-items: center; justify-content: center; background: transparent; border: none; padding: 0; }
+        .year-dot { width: 14px; height: 14px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 8.5px; font-weight: 500; color: #64748b; }
+        .year-dot.hl { font-weight: 500; }
+        .year-dot.today { background: var(--theme-color); color: white; font-weight: 700; }
 
         .dots-container { display: flex; gap: 2px; justify-content: center; position: absolute; bottom: 6px; width: 100%; padding: 0 4px; flex-wrap: wrap; }
         .dot { width: 4px; height: 4px; border-radius: 50%; }
@@ -95,6 +96,8 @@
         .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.3); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: all 0.2s; padding: 24px; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
         #delete-modal, #confirm-modal { z-index: 3000; }
+        #wishlist-modal { z-index: 2000; }
+        #ingredient-library-modal { z-index: 2200; }
         .modal-card { transform: scale(0.9); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); width: 100%; max-width: 400px; }
         .modal-overlay.active .modal-card { transform: scale(1); }
 
@@ -141,6 +144,7 @@
         .drag-handle { touch-action: none; }
         .dragging-fixed { position: fixed; z-index: 2500; pointer-events: none; transform: scale(1.02); box-shadow: 0 16px 40px rgba(0,0,0,0.08); }
 
+        .full-bleed { width: 100vw; margin-left: calc(50% - 50vw); }
         .play-area { position: relative; height: 72vh; border-radius: 32px; background: transparent; overflow: hidden; }
         .play-bubble { position: absolute; width: 124px; height: 124px; touch-action: none; user-select: none; }
         .play-bubble-circle { width: 104px; height: 104px; margin: 0 auto; position: relative; border-radius: 999px; background: white; }
@@ -149,6 +153,15 @@
         .play-bubble-exp { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: lowercase; background: #f1f5f9; color: #64748b; }
         .play-ring { position: absolute; inset: 0; }
         .play-ring svg { width: 104px; height: 104px; display: block; }
+        .play-bubble-wish { opacity: 0.45; }
+
+        .toggle-switch { position: relative; width: 44px; height: 26px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; inset: 0; background: #e2e8f0; border-radius: 999px; transition: all 0.2s; }
+        .toggle-slider::before { content: ''; position: absolute; width: 22px; height: 22px; left: 2px; top: 2px; background: white; border-radius: 999px; box-shadow: 0 6px 16px rgba(0,0,0,0.12); transition: all 0.2s; }
+        .toggle-switch input:checked + .toggle-slider { background: var(--theme-color); }
+        .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
+        .toggle-switch input:focus-visible + .toggle-slider { outline: 2px solid var(--theme-color); outline-offset: 2px; }
     </style>
 </head>
 <body class="select-none overflow-hidden">
@@ -329,6 +342,33 @@
         </div>
     </div>
 
+    <div id="wishlist-modal" class="modal-overlay">
+        <div class="modal-card bg-white rounded-[2.5rem] p-7 shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="label-style text-slate-400">Future Purchase</h3>
+                <button onclick="closeWishlistModal()" class="text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto hide-scrollbar space-y-5 pr-1">
+                <div class="space-y-2">
+                    <span class="label-style text-slate-300 ml-1">Memo</span>
+                    <div class="bg-slate-50 p-4 rounded-2xl">
+                        <textarea id="wishlist-text" rows="4" placeholder="Write anything..." class="w-full bg-transparent text-sm font-700 outline-none text-slate-700 placeholder:text-slate-300 resize-none" oninput="onWishlistTextChange(this.value)"></textarea>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center ml-1">
+                        <span class="label-style text-slate-300">List</span>
+                        <button type="button" onclick="openIngredientLibrary('pick','wishlist')" class="w-10 h-10 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center btn-press"><i data-lucide="list-plus" class="w-5 h-5"></i></button>
+                    </div>
+                    <div id="wishlist-items" class="space-y-2"></div>
+                </div>
+            </div>
+            <div class="pt-6 flex gap-3">
+                <button id="wishlist-save-btn" onclick="wishlistSaveAction()" class="flex-1 bg-slate-100 text-slate-400 h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press">Back</button>
+            </div>
+        </div>
+    </div>
+
     <div id="app" class="flex flex-col h-screen max-w-md mx-auto relative overflow-hidden">
         
         <header class="px-7 pt-12 pb-6 flex justify-between items-center bg-white/50 backdrop-blur-lg shrink-0 z-[600]">
@@ -348,7 +388,7 @@
             </div>
         </header>
 
-        <main class="flex-1 overflow-y-auto px-6 pb-40 hide-scrollbar relative">
+        <main id="main-scroll" class="flex-1 overflow-y-auto px-6 pb-40 hide-scrollbar relative">
             <!-- TAB: LOG -->
             <div id="tab-log" class="space-y-6 pt-4">
                 <div class="shell-card p-6 space-y-6">
@@ -442,7 +482,15 @@
                 </div>
 
                 <div id="pantry-view-play" class="hidden">
-                    <div id="pantry-play-area" class="play-area"></div>
+                    <div class="flex justify-end pb-3">
+                        <div class="flex flex-col items-end gap-1">
+                            <label class="toggle-switch">
+                                <input id="play-wishlist-switch" type="checkbox" onchange="setWishlistInPlay(this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="pantry-play-area" class="play-area full-bleed"></div>
                 </div>
             </div>
 
@@ -541,13 +589,13 @@
             </div>
         </main>
 
-        <div class="bottom-blur-zone"></div>
+        <div id="bottom-blur-zone" class="bottom-blur-zone"></div>
 
-        <div class="absolute bottom-10 left-0 right-0 z-[500] pointer-events-none flex justify-center">
+        <div id="bottom-nav-wrap" class="absolute bottom-10 left-0 right-0 z-[500] pointer-events-none flex justify-center">
             <nav class="glass-nav h-16 w-[calc(100%-3rem)] max-w-[calc(448px-3rem)] rounded-[24px] flex items-center justify-around px-2 pointer-events-auto">
                 <button id="nav-log" onclick="showTab('log')" class="p-3 text-theme btn-press"><i data-lucide="plus" class="w-5 h-5"></i></button>
                 <button id="nav-calendar" onclick="showTab('calendar')" class="p-3 text-slate-400 btn-press"><i data-lucide="calendar-days" class="w-5 h-5"></i></button>
-                <button id="nav-pantry" onclick="showTab('pantry')" class="p-3 text-slate-400 btn-press"><i data-lucide="box" class="w-5 h-5"></i></button>
+                <button id="nav-pantry" onclick="handleNavPantryClick()" class="p-3 text-slate-400 btn-press"><i data-lucide="box" class="w-5 h-5"></i></button>
                 <button id="nav-other" onclick="showTab('other')" class="p-3 text-slate-400 btn-press"><i data-lucide="user-round" class="w-5 h-5"></i></button>
             </nav>
         </div>
@@ -630,6 +678,7 @@
 
         let state = {
             currency: localStorage.getItem('pj_curr') || 'EUR',
+            activeTab: 'log',
             selectedCategory: localStorage.getItem('pj_last_cat') || 'Food',
             logs: JSON.parse(localStorage.getItem(CONFIG.storageKey) || '[]'),
             pantry: JSON.parse(localStorage.getItem(CONFIG.pantryKey) || '[]'),
@@ -656,11 +705,15 @@
             pantryView: localStorage.getItem('pj_pantry_view') || 'list',
             pantryPlayPositions: JSON.parse(localStorage.getItem('pj_pantry_play_pos_v1') || '{}'),
             pantryPlayZ: 1,
+            showWishlistInPlay: localStorage.getItem('pj_show_wishlist_play') === '1',
             pantryTempExpiryEnabled: false,
+            wishlist: JSON.parse(localStorage.getItem('pj_wishlist_v1') || '{"text":"","items":[]}'),
+            originalWishlistJson: '',
             ingredientLibrary: [],
             ingredientSearch: '',
             ingredientManageSearch: '',
             ingredientModalMode: 'manage',
+            ingredientPickTarget: 'log',
             libraryEditMode: false,
             libraryDraftOrderJson: '',
             libraryDirty: false,
@@ -668,7 +721,8 @@
             selectedLibraryItems: {}, // { itemName: { qty: 1, icon: '...' } }
             pendingLibraryFocusCatIdx: null,
             categoryModalMode: 'category',
-            originalGroupJson: ''
+            originalGroupJson: '',
+            lastPantryNavTap: 0
         };
 
         function isFirebaseConfigured() {
@@ -992,6 +1046,7 @@
 
         function openIngredientLibrary(mode = 'manage') {
             state.ingredientModalMode = mode;
+            if (mode === 'pick') state.ingredientPickTarget = arguments.length > 1 ? arguments[1] : 'log';
             state.ingredientSearch = '';
             state.selectedLibraryItems = {};
             const se = document.getElementById('ingredient-search');
@@ -1095,9 +1150,15 @@
                     return;
                 }
                 Object.entries(state.selectedLibraryItems).forEach(([name, data]) => {
-                    addStockRow(name, data.qty, data.icon);
+                    if (state.ingredientPickTarget === 'wishlist') wishlistAddItem(name, data.qty);
+                    else addStockRow(name, data.qty, data.icon);
                 });
                 closeIngredientLibrary();
+                if (state.ingredientPickTarget === 'wishlist') {
+                    renderWishlistItems();
+                    checkWishlistChanges();
+                    if (state.pantryView === 'play') renderPantryPlay();
+                }
             } else {
                 saveIngredientLibrary();
                 closeIngredientLibrary();
@@ -1677,6 +1738,17 @@
         }
 
         function updatePantryViewUI() {
+            setBottomNavHidden(state.activeTab === 'pantry' && state.pantryView === 'play');
+            const main = document.getElementById('main-scroll');
+            if (main) {
+                if (state.activeTab === 'pantry' && state.pantryView === 'play') {
+                    main.classList.remove('overflow-y-auto');
+                    main.classList.add('overflow-hidden');
+                } else {
+                    main.classList.remove('overflow-hidden');
+                    main.classList.add('overflow-y-auto');
+                }
+            }
             const listBtn = document.getElementById('pantry-view-list-btn');
             const playBtn = document.getElementById('pantry-view-play-btn');
             if (listBtn && playBtn) {
@@ -1692,7 +1764,16 @@
             document.getElementById('pantry-view-play')?.classList.toggle('hidden', state.pantryView !== 'play');
         }
 
+        function setBottomNavHidden(hidden) {
+            const wrap = document.getElementById('bottom-nav-wrap');
+            const blur = document.getElementById('bottom-blur-zone');
+            if (wrap) wrap.classList.toggle('hidden', !!hidden);
+            if (blur) blur.classList.toggle('hidden', !!hidden);
+        }
+
         function showTab(tab) {
+            state.activeTab = tab;
+            if (tab !== 'pantry' || state.pantryView !== 'play') setBottomNavHidden(false);
             document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('[id^="nav-"]').forEach(el => {
                 el.classList.remove('text-theme');
@@ -1713,6 +1794,14 @@
             if(tab === 'calendar') renderCalendarView();
             if(tab === 'pantry') { updatePantryViewUI(); if (state.pantryView === 'list') renderPantry(); else renderPantryPlay(); }
             if(tab === 'other') renderIngredientLibraryManageInline();
+        }
+
+        function handleNavPantryClick() {
+            if (state.activeTab === 'pantry') {
+                openWishlistModal();
+                return;
+            }
+            showTab('pantry');
         }
 
         function setCurrency(curr) {
@@ -1931,25 +2020,59 @@ async function processImage(input) {
             return `${d}d`;
         }
 
+        function updateWishlistPlayToggleUI() {
+            const sw = document.getElementById('play-wishlist-switch');
+            if (!sw) return;
+            sw.checked = !!state.showWishlistInPlay;
+        }
+
+        function setWishlistInPlay(on) {
+            state.showWishlistInPlay = !!on;
+            localStorage.setItem('pj_show_wishlist_play', state.showWishlistInPlay ? '1' : '0');
+            updateWishlistPlayToggleUI();
+            if (state.pantryView === 'play') renderPantryPlay();
+        }
+
         function renderPantryPlay() {
             const area = document.getElementById('pantry-play-area');
             if (!area) return;
-            const activeItems = state.pantry.filter(i => i.qty > 0);
+            updateWishlistPlayToggleUI();
+            normalizeWishlist();
+            area.onclick = (e) => {
+                if (e.target && e.target.closest && e.target.closest('.play-bubble')) return;
+                const wrap = document.getElementById('bottom-nav-wrap');
+                const isHidden = wrap?.classList.contains('hidden');
+                setBottomNavHidden(!isHidden);
+            };
+            const pantryItems = state.pantry.filter(i => i.qty > 0).map(i => ({ type: 'pantry', item: i }));
+            const wishItems = (state.showWishlistInPlay ? (state.wishlist?.items || []).filter(w => !w.checked && (w.name || '').trim() !== '') : [])
+                .map(w => ({ type: 'wish', item: { name: w.name, qty: parseInt(w.qty) || 1, max: parseInt(w.qty) || 1 } }));
+            const allItems = pantryItems.concat(wishItems);
+            const header = document.querySelector('header');
+            const headerBottom = header ? header.getBoundingClientRect().bottom : 0;
+            const navWrap = document.getElementById('bottom-nav-wrap');
+            const navH = (navWrap && !navWrap.classList.contains('hidden')) ? (navWrap.getBoundingClientRect().height + 24) : 0;
+            const vh = Math.max(320, window.innerHeight - headerBottom - navH - 16);
+            area.style.height = `${vh}px`;
             const rect = area.getBoundingClientRect();
             const w = rect.width || 320;
             const h = rect.height || 480;
             const bubbleW = 124;
             const bubbleH = 124;
-            const radius = 52;
-            const pad = 14;
+            const pad = 0;
+            const radius = bubbleW / 2;
 
-            const minX = pad + radius;
-            const maxX = w - pad - radius;
-            const minY = pad + radius;
-            const maxY = h - pad - radius - (bubbleH - 72);
+            const minX = pad + bubbleW / 2;
+            const maxX = w - pad - bubbleW / 2;
+            const minY = pad + bubbleH / 2;
+            const maxY = h - pad - bubbleH / 2;
 
             const positions = state.pantryPlayPositions || {};
-            const keys = activeItems.map(getPantryPlayKey).filter(Boolean);
+            const keys = allItems.map(it => {
+                const nm = (it.item?.name || '').trim().toLowerCase();
+                if (!nm) return '';
+                return it.type === 'wish' ? `wish:${nm}` : nm;
+            }).filter(Boolean);
             keys.forEach((k, idx) => {
                 if (!positions[k]) {
                     const cols = Math.max(1, Math.floor((w - pad * 2) / (bubbleW + 12)));
@@ -1960,15 +2083,15 @@ async function processImage(input) {
                     positions[k] = { x, y, z: 1 };
                 }
             });
-            Object.keys(positions).forEach(k => { if (!keys.includes(k)) delete positions[k]; });
             state.pantryPlayPositions = positions;
             savePantryPlayPositions();
 
             const ringR = 44;
             const c = 2 * Math.PI * ringR;
 
-            area.innerHTML = activeItems.map((item) => {
-                const key = getPantryPlayKey(item);
+            area.innerHTML = allItems.map(({ type, item }) => {
+                const baseKey = (item?.name || '').trim().toLowerCase();
+                const key = type === 'wish' ? `wish:${baseKey}` : baseKey;
                 const pos = positions[key] || { x: minX, y: minY, z: 1 };
                 const x = clamp(pos.x, minX, maxX);
                 const y = clamp(pos.y, minY, maxY);
@@ -1976,11 +2099,11 @@ async function processImage(input) {
 
                 const pct = item.max ? clamp(item.qty / item.max, 0, 1) : 0;
                 const dash = c * pct;
-                const col = item.customColor || '#94a3b8';
-                const exp = state.expiryFeatureEnabled ? fmtExpiryLeft(item.expiresAt) : '';
+                const col = type === 'wish' ? '#cbd5e1' : (item.customColor || '#94a3b8');
+                const exp = (type === 'wish') ? '' : (state.expiryFeatureEnabled ? fmtExpiryLeft(item.expiresAt) : '');
 
                 return `
-                    <div class="play-bubble" data-play-key="${key}" style="left:${x - bubbleW / 2}px; top:${y - radius}px; z-index:${z}">
+                    <div class="play-bubble ${type === 'wish' ? 'play-bubble-wish' : ''}" data-play-key="${key}" style="left:${x - bubbleW / 2}px; top:${y - radius}px; z-index:${z}">
                         <div class="play-bubble-circle">
                             <div class="play-ring">
                                 <svg viewBox="0 0 104 104">
@@ -2009,10 +2132,10 @@ async function processImage(input) {
             const bubbleH = dims.bubbleH;
             const pad = dims.pad;
 
-            const minX = pad + radius;
-            const maxX = w - pad - radius;
-            const minY = pad + radius;
-            const maxY = h - pad - radius - (bubbleH - 72);
+            const minX = pad + dims.bubbleW / 2;
+            const maxX = w - pad - dims.bubbleW / 2;
+            const minY = pad + bubbleH / 2;
+            const maxY = h - pad - bubbleH / 2;
 
             area.querySelectorAll('.play-bubble').forEach(el => {
                 el.onpointerdown = (e) => {
@@ -2040,7 +2163,7 @@ async function processImage(input) {
                         const ny = clamp(startPosY + dy, minY, maxY);
                         state.pantryPlayPositions[key] = { ...cur, x: nx, y: ny };
                         el.style.left = `${nx - dims.bubbleW / 2}px`;
-                        el.style.top = `${ny - radius}px`;
+                        el.style.top = `${ny - dims.bubbleH / 2}px`;
                     };
 
                     const up = () => {
@@ -2055,6 +2178,123 @@ async function processImage(input) {
                     document.addEventListener('pointercancel', up);
                 };
             });
+        }
+
+        function normalizeWishlist() {
+            const w = state.wishlist || {};
+            if (typeof w.text !== 'string') w.text = '';
+            if (!Array.isArray(w.items)) w.items = [];
+            w.items = w.items.map(it => ({
+                name: String(it?.name || ''),
+                qty: parseInt(it?.qty) || 1,
+                checked: !!it?.checked
+            })).filter(it => it.name.trim() !== '');
+            state.wishlist = w;
+        }
+
+        function saveWishlist() {
+            normalizeWishlist();
+            localStorage.setItem('pj_wishlist_v1', JSON.stringify(state.wishlist));
+        }
+
+        function openWishlistModal() {
+            normalizeWishlist();
+            state.originalWishlistJson = JSON.stringify(state.wishlist);
+            const ta = document.getElementById('wishlist-text');
+            if (ta) ta.value = state.wishlist.text || '';
+            renderWishlistItems();
+            checkWishlistChanges();
+            document.getElementById('wishlist-modal').classList.add('active');
+            lucide.createIcons();
+        }
+
+        function closeWishlistModal() {
+            document.getElementById('wishlist-modal').classList.remove('active');
+        }
+
+        function checkWishlistChanges() {
+            const btn = document.getElementById('wishlist-save-btn');
+            if (!btn) return;
+            const isDiff = JSON.stringify(state.wishlist) !== state.originalWishlistJson;
+            if (isDiff) {
+                btn.innerText = "Confirm";
+                btn.className = "flex-1 bg-theme text-white h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press shadow-theme";
+            } else {
+                btn.innerText = "Back";
+                btn.className = "flex-1 bg-slate-100 text-slate-400 h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press";
+            }
+        }
+
+        function wishlistSaveAction() {
+            closeWishlistModal();
+        }
+
+        function onWishlistTextChange(val) {
+            normalizeWishlist();
+            state.wishlist.text = val;
+            saveWishlist();
+            checkWishlistChanges();
+        }
+
+        function wishlistAddItem(name, qty) {
+            normalizeWishlist();
+            const nm = String(name || '').trim();
+            if (!nm) return;
+            const addQty = parseInt(qty) || 1;
+            const idx = state.wishlist.items.findIndex(it => it.name.trim().toLowerCase() === nm.toLowerCase() && !it.checked);
+            if (idx >= 0) state.wishlist.items[idx].qty = (parseInt(state.wishlist.items[idx].qty) || 1) + addQty;
+            else state.wishlist.items.push({ name: nm, qty: addQty, checked: false });
+            saveWishlist();
+        }
+
+        function wishlistToggleChecked(idx) {
+            normalizeWishlist();
+            const it = state.wishlist.items[idx];
+            if (!it) return;
+            it.checked = !it.checked;
+            saveWishlist();
+            renderWishlistItems();
+            checkWishlistChanges();
+            if (state.pantryView === 'play') renderPantryPlay();
+        }
+
+        function wishlistDeleteItem(idx) {
+            normalizeWishlist();
+            state.wishlist.items.splice(idx, 1);
+            saveWishlist();
+            renderWishlistItems();
+            checkWishlistChanges();
+            if (state.pantryView === 'play') renderPantryPlay();
+        }
+
+        function renderWishlistItems() {
+            const wrap = document.getElementById('wishlist-items');
+            if (!wrap) return;
+            normalizeWishlist();
+            const items = state.wishlist.items || [];
+            const sorted = items.slice().sort((a,b) => (a.checked === b.checked) ? 0 : (a.checked ? 1 : -1));
+            wrap.innerHTML = sorted.map((it) => {
+                const idx = items.indexOf(it);
+                const checked = !!it.checked;
+                const checkCls = checked
+                    ? "w-8 h-8 rounded-full bg-theme border border-theme text-white flex items-center justify-center btn-press"
+                    : "w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-300 flex items-center justify-center btn-press";
+                const nameCls = checked ? "text-sm font-700 text-slate-400 line-through" : "text-sm font-700 text-slate-800";
+                const qtyLabel = (parseInt(it.qty) || 1) > 1 ? `<span class="ml-2 text-[10px] font-800 text-slate-400">x${parseInt(it.qty) || 1}</span>` : '';
+                return `
+                    <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl inner-stroke">
+                        <button type="button" onclick="wishlistDeleteItem(${idx})" class="text-slate-300"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center min-w-0">
+                                <div class="${nameCls} truncate">${it.name}</div>
+                                ${qtyLabel}
+                            </div>
+                        </div>
+                        <button type="button" onclick="wishlistToggleChecked(${idx})" class="${checkCls}"><i data-lucide="check" class="w-4 h-4"></i></button>
+                    </div>
+                `;
+            }).join('') || `<div class="py-8 text-center text-slate-200 label-style">No items</div>`;
+            lucide.createIcons();
         }
 
         function createPantryItemHTML(item, index, isUsed) {
@@ -2162,7 +2402,7 @@ async function processImage(input) {
             const currentObj = { name: document.getElementById('pantry-edit-name').value, qty: parseInt(document.getElementById('pantry-edit-qty').value) || 0, max: parseInt(document.getElementById('pantry-edit-max').value) || 1, icon: state.pantryTempIcon, color: state.pantryTempColor, expiresAtDays: expVal };
             const btn = document.getElementById('save-pantry-btn');
             if (JSON.stringify(currentObj) !== state.originalPantryJson) {
-                btn.innerText = "Save Changes";
+                btn.innerText = "Confirm";
                 btn.className = "flex-1 bg-theme text-white h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press";
             } else {
                 btn.innerText = "Back";
@@ -2218,17 +2458,18 @@ async function processImage(input) {
         function renderEditCategories() {
             document.getElementById('edit-category-list').innerHTML = CONFIG.categories.map(cat => {
                 const isActive = state.editingEntry.category === cat.name;
-                return `<button onclick="state.editingEntry.category='${cat.name}'; renderEditCategories(); checkForChanges()" class="category-pill shrink-0 px-5 py-2 rounded-2xl ${isActive ? cat.colorClass : ''}">${cat.name}</button>`;
+                const style = isActive ? `background:${cat.hex}; border-color:${cat.hex}; color:white;` : '';
+                return `<button onclick="state.editingEntry.category='${cat.name}'; renderEditCategories(); checkForChanges()" class="category-pill shrink-0 px-5 py-2 rounded-2xl" style="${style}">${cat.name}</button>`;
             }).join('');
         }
 
         function renderEditItems() {
             const container = document.getElementById('edit-stock-container');
             container.innerHTML = state.editingEntry.items.map((item, idx) => `
-                <div class="flex gap-3 items-center bg-slate-50 p-3 rounded-2xl inner-stroke">
+                <div class="flex gap-2 items-center bg-slate-50 p-3 rounded-2xl inner-stroke min-w-0">
                     <button onclick="state.editingEntry.items.splice(${idx},1); renderEditItems(); checkForChanges()" class="text-slate-300"><i data-lucide="x" class="w-4 h-4"></i></button>
-                    <input type="text" value="${item.name}" oninput="state.editingEntry.items[${idx}].name=this.value; checkForChanges()" class="flex-1 bg-transparent text-xs font-700 outline-none text-slate-700">
-                    <div class="flex items-center gap-2">
+                    <input type="text" value="${item.name}" oninput="state.editingEntry.items[${idx}].name=this.value; checkForChanges()" class="flex-1 min-w-0 bg-transparent text-xs font-700 outline-none text-slate-700">
+                    <div class="flex items-center gap-1 shrink-0">
                         <button onclick="state.editingEntry.items[${idx}].qty=Math.max(1, (parseInt(state.editingEntry.items[${idx}].qty)||1)-1); renderEditItems(); checkForChanges()" class="qty-btn qty-btn-minus"><i data-lucide="minus" class="w-3.5 h-3.5"></i></button>
                         <input type="number" value="${item.qty}" onkeydown="handleQtyKey(event)" oninput="state.editingEntry.items[${idx}].qty=this.value; checkForChanges()" class="w-8 bg-transparent text-xs font-800 outline-none text-center">
                         <button onclick="state.editingEntry.items[${idx}].qty=(parseInt(state.editingEntry.items[${idx}].qty)||1)+1; renderEditItems(); checkForChanges()" class="qty-btn qty-btn-plus"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
@@ -2422,9 +2663,9 @@ async function processImage(input) {
                                         const ds = `${y}-${String(m + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                                         const isToday = ds === todayString;
                                         const hex = getHighlightHexForDate(ds);
-                                        const style = (!isToday && hex) ? `style="background:${hex}25; color:${hex};"` : '';
-                                        const cls = isToday ? 'year-day today' : (hex ? 'year-day hl' : 'year-day');
-                                        return `<button type="button" onclick="state.currentDate=new Date(${y},${m},1); state.selectedDate=new Date(${y},${m},${d}); setCalendarView('month')" class="${cls}" ${style}>${d}</button>`;
+                                        const dotCls = isToday ? 'year-dot today' : (hex ? 'year-dot hl' : 'year-dot');
+                                        const dotStyle = (!isToday && hex) ? `style="background:${hex}25; color:${hex};"` : '';
+                                        return `<button type="button" onclick="state.currentDate=new Date(${y},${m},1); state.selectedDate=new Date(${y},${m},${d}); setCalendarView('month')" class="year-day-btn"><span class="${dotCls}" ${dotStyle}>${d}</span></button>`;
                                     }).join('')}
                                 </div>
                             </div>
@@ -2513,14 +2754,14 @@ async function processImage(input) {
 
                 return `
                     <div class="inner-stroke rounded-2xl p-4 flex items-center justify-between bg-white">
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
                             <div onclick="event.stopPropagation(); openCategoryEdit(${idx})" class="w-10 h-10 rounded-xl flex items-center justify-center btn-press" style="background:${cat.hex}20; color:${cat.hex}">
                                 <i data-lucide="${cat.icon}" class="w-5 h-5"></i>
                             </div>
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <input value="${cat.name}" onfocus="this.dataset.oldName=this.value" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.blur();}" onblur="commitCategoryRename(${idx}, this.value, this.dataset.oldName)" class="bg-slate-50 rounded-xl px-3 py-2 text-sm font-800 text-slate-800 outline-none">
-                                    ${cat.highlight ? `<span class="ml-2 px-2 py-1 rounded-lg text-[9px] tracking-widest font-800 pill-theme">Highlighted</span>` : ''}
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <input value="${cat.name}" onfocus="this.dataset.oldName=this.value" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.blur();}" onblur="commitCategoryRename(${idx}, this.value, this.dataset.oldName)" class="bg-slate-50 rounded-xl px-3 py-2 text-sm font-800 text-slate-800 outline-none flex-1 min-w-0">
+                                    ${cat.highlight ? `<span class="shrink-0 px-2 py-1 rounded-lg text-[9px] tracking-widest font-800 pill-theme">Highlighted</span>` : ''}
                                 </div>
                             </div>
                         </div>
