@@ -16,8 +16,8 @@
         :root {
             /* ========================================= */
             /* 已经为你替换为绿色主题 */
-            --theme-color: #6EB405;       /* 主色调 (绿色) */
-            --theme-glow: rgba(5, 150, 105, 0.2); /* 阴影发光色 */
+            --theme-color: #494cd8;       /* 主色调 (绿色) */
+            --theme-glow: rgba(58, 41, 112, 0.2); /* 阴影发光色 */
             /* ========================================= */
 
             --shell-bg: #f8fafc;
@@ -72,6 +72,13 @@
         .day-cell.selected { background: var(--theme-color) !important; color: white !important; }
         .day-cell.today { color: var(--theme-color); font-weight: 800; }
 
+        .year-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--border-color); border-left: 1px solid var(--border-color); background: white; }
+        .year-month { border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 8px; }
+        .year-mini-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .year-day { width: 100%; height: 12px; display: flex; align-items: center; justify-content: center; font-size: 8.5px; font-weight: 500; color: #64748b; }
+        .year-day.hl { border-radius: 999px; font-weight: 500; }
+        .year-day.today { border-radius: 999px; background: var(--theme-color); color: white; font-weight: 500; }
+
         .dots-container { display: flex; gap: 2px; justify-content: center; position: absolute; bottom: 6px; width: 100%; padding: 0 4px; flex-wrap: wrap; }
         .dot { width: 4px; height: 4px; border-radius: 50%; }
 
@@ -87,6 +94,7 @@
 
         .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.3); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: all 0.2s; padding: 24px; }
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        #delete-modal, #confirm-modal { z-index: 3000; }
         .modal-card { transform: scale(0.9); transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); width: 100%; max-width: 400px; }
         .modal-overlay.active .modal-card { transform: scale(1); }
 
@@ -103,6 +111,44 @@
         .icon-box-choice.selected { background: #f1f5f9; color: var(--theme-color); border-color: var(--theme-color); }
         
         .used-up-dim { opacity: 0.45; filter: grayscale(1); }
+
+        /* Hide number input arrows */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        /* Unified Qty Buttons */
+        .qty-btn {
+            width: 24px; height: 24px;
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .qty-btn-minus { background: #f1f5f9; color: #94a3b8; }
+        .qty-btn-plus { background: var(--theme-color); color: white; }
+        .qty-btn:active { transform: scale(0.9); opacity: 0.8; }
+        .qty-btn:disabled { opacity: 0.4; pointer-events: none; }
+
+        .pill-theme {
+            border: 1px solid var(--theme-color);
+            color: var(--theme-color);
+            background: color-mix(in srgb, var(--theme-color) 12%, white);
+        }
+        @supports not (background: color-mix(in srgb, white, black)) {
+            .pill-theme { background: var(--theme-glow); }
+        }
+
+        .drag-handle { touch-action: none; }
+        .dragging-fixed { position: fixed; z-index: 2500; pointer-events: none; transform: scale(1.02); box-shadow: 0 16px 40px rgba(0,0,0,0.08); }
+
+        .play-area { position: relative; height: 72vh; border-radius: 32px; background: transparent; overflow: hidden; }
+        .play-bubble { position: absolute; width: 124px; height: 124px; touch-action: none; user-select: none; }
+        .play-bubble-circle { width: 104px; height: 104px; margin: 0 auto; position: relative; border-radius: 999px; background: white; }
+        .play-bubble-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 10px; }
+        .play-bubble-name { font-size: 14px; font-weight: 400; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 96px; }
+        .play-bubble-exp { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: lowercase; background: #f1f5f9; color: #64748b; }
+        .play-ring { position: absolute; inset: 0; }
+        .play-ring svg { width: 104px; height: 104px; display: block; }
     </style>
 </head>
 <body class="select-none overflow-hidden">
@@ -124,6 +170,22 @@
                 <div class="flex flex-col w-full gap-2 pt-2">
                     <button id="confirm-delete-btn" class="w-full py-4 bg-rose-500 text-white text-[10px] font-800 uppercase tracking-widest rounded-2xl btn-press">Delete</button>
                     <button onclick="closeDeleteModal()" class="w-full py-4 bg-slate-50 text-slate-400 text-[10px] font-800 uppercase tracking-widest rounded-2xl btn-press">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal-card bg-white rounded-[2.5rem] p-8 shadow-2xl border border-slate-100 max-w-[300px]">
+            <div class="flex flex-col items-center text-center space-y-4">
+                <div class="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500"><i data-lucide="alert-triangle" class="w-7 h-7"></i></div>
+                <div>
+                    <h4 id="confirm-title" class="text-slate-900 font-800 text-lg">Are you sure?</h4>
+                    <p id="confirm-desc" class="text-slate-400 text-xs font-600 mt-1">This action cannot be undone.</p>
+                </div>
+                <div class="flex flex-col w-full gap-2 pt-2">
+                    <button id="confirm-ok-btn" class="w-full py-4 bg-theme text-white text-[10px] font-800 uppercase tracking-widest rounded-2xl btn-press">Confirm</button>
+                    <button id="confirm-cancel-btn" class="w-full py-4 bg-slate-50 text-slate-400 text-[10px] font-800 uppercase tracking-widest rounded-2xl btn-press">Cancel</button>
                 </div>
             </div>
         </div>
@@ -217,7 +279,7 @@
                 <button onclick="closeCategoryEdit()" class="text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div class="flex-1 overflow-y-auto hide-scrollbar space-y-6 pr-1">
-                <div class="space-y-2">
+                <div id="cat-edit-name-wrap" class="space-y-2">
                     <span class="label-style text-slate-300 ml-1">Name</span>
                     <div class="bg-slate-50 p-4 rounded-2xl">
                         <input type="text" id="cat-edit-name" class="w-full bg-transparent text-sm font-700 outline-none text-slate-700" oninput="checkCategoryChanges()">
@@ -228,13 +290,41 @@
                     <div class="grid grid-cols-6 gap-2" id="cat-icon-grid"></div>
                     <button id="cat-icon-toggle" type="button" onclick="state.catIconsExpanded=!state.catIconsExpanded; renderCategoryIconGrid()" class="w-full text-center text-[11px] font-900 text-theme uppercase tracking-widest pt-1 hidden">Show More</button>
                 </div>
-                <div class="space-y-3">
+                <div id="cat-color-wrap" class="space-y-3">
                     <span class="label-style text-slate-300 ml-1">Color</span>
                     <div class="grid grid-cols-6 gap-2" id="cat-color-grid"></div>
                 </div>
+                <div id="cat-highlight-wrap" class="pt-2">
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                        <span class="text-sm font-800 text-slate-700">Highlight in Calendar</span>
+                        <button id="cat-highlight-btn" type="button" onclick="toggleCatHighlight()" class="px-4 py-2 rounded-xl bg-slate-200 text-slate-500 text-[10px] font-900 uppercase tracking-widest btn-press">Off</button>
+                    </div>
+                </div>
             </div>
             <div class="pt-6 flex gap-3">
+                <button id="cat-delete-btn" onclick="deleteCategory(state.categoryEditingIdx); closeCategoryEdit();" class="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center btn-press hidden"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
                 <button id="save-cat-btn" onclick="saveCategoryEdit()" class="flex-1 bg-slate-100 text-slate-400 h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ingredient-library-modal" class="modal-overlay">
+        <div class="modal-card bg-white rounded-[2.5rem] p-7 shadow-2xl border border-slate-100 flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="label-style text-slate-400">Ingredient Library</h3>
+                <button onclick="closeIngredientLibrary()" class="text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto hide-scrollbar space-y-4 pr-1">
+                <div class="flex items-center bg-slate-50 p-4 rounded-2xl">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-300"></i>
+                    <input id="ingredient-search" type="text" placeholder="Search ingredients..." class="ml-2 w-full bg-transparent text-sm font-700 outline-none text-slate-700 placeholder:text-slate-300" oninput="state.ingredientSearch=this.value; renderIngredientLibrary()">
+                </div>
+                <div id="ingredient-library-list" class="space-y-4"></div>
+            </div>
+            <div id="library-footer" class="pt-6 flex flex-col items-center gap-4">
+                <div id="ingredient-count-tip" class="text-[12px] font-700 text-[#666] hidden">已加入 0 种物品</div>
+                <button id="add-group-btn-lib" onclick="addIngredientCategory()" class="text-[13px] font-800 text-theme py-2">Add group</button>
+                <button id="ingredient-save-btn" onclick="saveIngredientLibraryAction();" class="w-full bg-slate-100 text-slate-400 h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press hidden">Back</button>
             </div>
         </div>
     </div>
@@ -246,9 +336,15 @@
                 <span class="label-style text-slate-400">Hi Matti</span>
                 <h1 id="main-title" class="text-3xl font-800 tracking-tight text-slate-900">Log</h1>
             </div>
-            <div class="flex items-center bg-slate-100 p-1 rounded-2xl">
-                <button onclick="setCurrency('EUR')" id="curr-EUR" class="px-4 py-2 rounded-xl text-[10px] font-800 transition-all bg-white text-theme shadow-sm">EUR</button>
-                <button onclick="setCurrency('CNY')" id="curr-CNY" class="px-4 py-2 rounded-xl text-[10px] font-800 transition-all text-slate-400">CNY</button>
+            <div class="flex items-center gap-3">
+                <div id="pantry-view-switcher" class="hidden flex items-center bg-slate-100 p-1 rounded-2xl">
+                    <button onclick="setPantryView('list')" id="pantry-view-list-btn" class="px-4 py-2 rounded-xl text-[10px] font-800 transition-all bg-white text-theme shadow-sm">LIST</button>
+                    <button onclick="setPantryView('play')" id="pantry-view-play-btn" class="px-4 py-2 rounded-xl text-[10px] font-800 transition-all text-slate-400">PLAY</button>
+                </div>
+                <div id="currency-switcher" class="flex items-center bg-slate-100 p-1 rounded-2xl">
+                    <button onclick="setCurrency('EUR')" id="curr-EUR" class="px-4 py-2 rounded-xl text-[10px] font-800 transition-all bg-white text-theme shadow-sm">EUR</button>
+                    <button onclick="setCurrency('CNY')" id="curr-CNY" class="px-4 py-2 rounded-xl text-[10px] font-800 transition-all text-slate-400">CNY</button>
+                </div>
             </div>
         </header>
 
@@ -277,8 +373,9 @@
                             </div>
                         </div>
                         <div id="stock-container" class="space-y-2"></div>
+                        <datalist id="ingredient-datalist"></datalist>
                         <div class="flex items-center gap-3 pt-2">
-                            <button type="button" onclick="addStockRow()" class="w-14 h-14 rounded-2xl border-1.5 border-dashed border-slate-200 flex items-center justify-center text-slate-300 btn-press"><i data-lucide="plus" class="w-6 h-6"></i></button>
+                            <button type="button" onclick="openIngredientLibrary('pick')" class="w-14 h-14 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center btn-press"><i data-lucide="list-plus" class="w-5 h-5"></i></button>
                             <button type="submit" id="save-btn" class="flex-1 bg-theme text-white h-14 rounded-2xl text-[12px] font-900 uppercase tracking-[0.2em] shadow-theme btn-press">Save</button>
                         </div>
                     </form>
@@ -300,9 +397,10 @@
                         <div class="flex items-center gap-1">
                             <button id="month-prev" class="p-2 text-slate-400 btn-press"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
                             <button id="month-next" class="p-2 text-slate-400 btn-press"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                            <button id="calendar-view-toggle" onclick="toggleCalendarView()" class="w-10 h-10 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center btn-press"><i id="calendar-view-icon" data-lucide="calendar-days" class="w-5 h-5"></i></button>
                         </div>
                     </div>
-                    <div class="grid grid-cols-7 bg-slate-50/50 border-y border-slate-100 mt-2">
+                    <div id="calendar-month-head" class="grid grid-cols-7 bg-slate-50/50 border-y border-slate-100 mt-2">
                         <span class="label-style py-2 text-center text-slate-300 scale-75">Mo</span>
                         <span class="label-style py-2 text-center text-slate-300 scale-75">Tu</span>
                         <span class="label-style py-2 text-center text-slate-300 scale-75">We</span>
@@ -312,8 +410,9 @@
                         <span class="label-style py-2 text-center text-slate-300 scale-75">Su</span>
                     </div>
                     <div id="calendar-days" class="calendar-grid"></div>
+                    <div id="year-calendar" class="hidden pt-2"></div>
                 </div>
-                <div class="space-y-4 pb-10">
+                <div id="calendar-day-detail" class="space-y-4 pb-10">
                     <div class="flex items-center justify-between px-2">
                         <h3 id="selected-date-label" class="label-style text-slate-400">Detail</h3>
                         <span id="selected-day-total" class="text-sm font-800 text-slate-900 tracking-tight">€ 0.00</span>
@@ -324,35 +423,32 @@
 
             <!-- TAB: PANTRY -->
             <div id="tab-pantry" class="hidden space-y-6 pt-4">
-                <div class="flex flex-col items-center px-2 space-y-2">
-                    <h3 class="label-style text-slate-400">My Stock</h3>
-                    <p id="pantry-stats" class="text-[11px] font-700 text-slate-300 uppercase tracking-widest">Total 0 types of items</p>
-                </div>
-                <div id="pantry-controls" class="space-y-3">
-                    <div class="flex gap-3">
-                        <div class="flex-1 flex items-center bg-transparent p-4 rounded-2xl inner-stroke">
-                            <i data-lucide="search" class="w-4 h-4 text-slate-300"></i>
-                            <input id="pantry-search" type="text" placeholder="Search items..." class="ml-2 w-full bg-transparent text-sm font-700 outline-none text-slate-700 placeholder:text-slate-300" oninput="state.pantrySearch=this.value; renderPantry()">
+                <div id="pantry-view-list" class="space-y-6">
+                    <div id="pantry-controls" class="space-y-3">
+                        <div class="flex gap-2">
+                            <div class="flex-1 flex items-center bg-transparent p-4 rounded-2xl inner-stroke">
+                                <i data-lucide="search" class="w-4 h-4 text-slate-300"></i>
+                                <input id="pantry-search" type="text" placeholder="Search items..." class="ml-2 w-full bg-transparent text-sm font-700 outline-none text-slate-700 placeholder:text-slate-300" oninput="state.pantrySearch=this.value; renderPantry()">
+                            </div>
+                            <button id="pantry-sort-toggle" onclick="togglePantrySort()" class="w-14 h-14 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center btn-press"><i id="pantry-sort-icon" data-lucide="arrow-down-narrow-wide" class="w-5 h-5"></i></button>
                         </div>
-                        <button id="pantry-sort-btn" onclick="togglePantrySort()" class="px-5 h-14 rounded-2xl bg-slate-50 text-slate-500 text-[10px] font-900 uppercase tracking-widest btn-press">Added</button>
+                        <div id="pantry-count-label" class="px-1 text-[10px] font-800 text-slate-300 uppercase tracking-widest">0 items in stock</div>
                     </div>
-                    <div id="pantry-expiring-soon" class="hidden inner-stroke rounded-2xl p-4 bg-white"></div>
+                    <div id="pantry-list" class="space-y-4"></div>
+                    <div id="used-up-section" class="space-y-4 pb-10 hidden">
+                        <div class="section-header pt-4"><h3 class="label-style text-slate-300">Used Up</h3></div>
+                        <div id="used-up-list" class="space-y-4"></div>
+                    </div>
                 </div>
-                <div id="pantry-list" class="space-y-4"></div>
-                <div id="used-up-section" class="space-y-4 pb-10 hidden">
-                    <div class="section-header pt-4"><h3 class="label-style text-slate-300">Used Up</h3></div>
-                    <div id="used-up-list" class="space-y-4"></div>
+
+                <div id="pantry-view-play" class="hidden">
+                    <div id="pantry-play-area" class="play-area"></div>
                 </div>
             </div>
 
             <!-- TAB: OTHER -->
-            <div id="tab-other" class="hidden flex flex-col items-center justify-center py-24">
+            <div id="tab-other" class="hidden space-y-6 pt-4">
                 <div class="w-full space-y-6">
-                    <div class="flex flex-col items-center px-2 space-y-2">
-                        <h3 class="label-style text-slate-400">My</h3>
-                        <p class="text-[11px] font-700 text-slate-300 uppercase tracking-widest">Settings</p>
-                    </div>
-
                     <div class="shell-card p-6 space-y-5 w-full">
                         <div class="flex items-center justify-between">
                             <div>
@@ -395,15 +491,40 @@
                                 <h4 class="text-sm font-900 text-slate-900 tracking-tight">Categories</h4>
                                 <p class="text-[11px] font-700 text-slate-300 mt-1">Edit name, order, color & icon</p>
                             </div>
-                            <button id="cat-edit-toggle" onclick="toggleCategoryEditMode()" class="w-10 h-10 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center btn-press">
-                                <i data-lucide="pencil" class="w-5 h-5"></i>
-                            </button>
-                        </div>
-                        <div id="cat-edit-actions" class="hidden flex gap-3">
-                            <button onclick="saveCategoryReorder()" class="flex-1 bg-theme text-white h-12 rounded-2xl text-[11px] font-900 uppercase tracking-[0.2em] shadow-theme btn-press">Save</button>
-                            <button onclick="cancelCategoryReorder()" class="w-24 bg-slate-100 text-slate-500 h-12 rounded-2xl text-[11px] font-900 uppercase tracking-[0.2em] btn-press">Cancel</button>
+                            <div class="flex items-center gap-2">
+                                <button id="cat-edit-save-btn" onclick="saveCategoryReorder()" class="w-10 h-10 rounded-2xl bg-theme text-white flex items-center justify-center btn-press hidden">
+                                    <i data-lucide="check" class="w-5 h-5"></i>
+                                </button>
+                                <button id="cat-edit-toggle" onclick="toggleCategoryEditMode()" class="w-10 h-10 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center btn-press">
+                                    <i data-lucide="move" class="w-5 h-5"></i>
+                                </button>
+                            </div>
                         </div>
                         <div id="category-settings-list" class="space-y-3"></div>
+                        <div class="flex justify-center pt-2">
+                            <button id="add-cat-btn-main" onclick="openCategoryCreate()" class="text-[13px] font-800 text-theme py-2">Add category</button>
+                        </div>
+                    </div>
+                    
+                    <div class="shell-card p-6 space-y-5 w-full">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="text-sm font-900 text-slate-900 tracking-tight">Library</h4>
+                                <p class="text-[11px] font-700 text-slate-300 mt-1">Edit groups & items</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button id="lib-edit-save-btn" onclick="saveLibraryReorder()" class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-300 flex items-center justify-center btn-press hidden" disabled>
+                                    <i data-lucide="check" class="w-5 h-5"></i>
+                                </button>
+                                <button id="lib-edit-toggle" onclick="toggleLibraryEditMode()" class="w-10 h-10 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center btn-press">
+                                    <i data-lucide="move" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="ingredient-library-list-manage" class="space-y-4"></div>
+                        <div class="flex justify-center pt-2">
+                            <button onclick="addIngredientCategory()" class="text-[13px] font-800 text-theme py-2">Add group</button>
+                        </div>
                     </div>
 
                     <div class="shell-card p-6 space-y-4 w-full">
@@ -460,18 +581,42 @@
                 { id: 'other', name: 'Other', colorClass: 'bg-other', textClass: 'color-other', hex: '#94a3b8', icon: 'more-horizontal' }
             ],
             // Item icons shown in the pantry editor (keep count in sync with your existing UI grid).
-            // Replaced the previous general icons with food-related: vegetables / fruits / meat / eggs / dairy.
-            pantryIcons: ['circle', 'carrot', 'leafy-green', 'salad', 'bean', 'wheat', 'apple', 'banana', 'cherry', 'citrus', 'grape', 'drumstick', 'beef', 'piggy-bank', 'fish', 'sandwich', 'egg', 'milk', 'ice-cream', 'ice-cream-2', 'croissant', 'pizza', 'popsicle', 'soup'],
-            pantryColors: ['#94a3b8', '#059669', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#ec4899', '#B2C9AB', '#92A8D1', '#E2B4B4', '#C3B1E1', '#DEB887'],
-            categoryIcons: [
-                // Keep this list conservative for lucide@0.321.0 compatibility.
+            pantryIcons: [
                 'utensils', 'car', 'shopping-bag', 'users', 'home', 'briefcase', 'more-horizontal',
                 'circle', 'tag', 'package', 'wallet', 'receipt', 'gift', 'heart', 'coffee',
                 'calendar-days', 'map-pin', 'train', 'bus', 'bike', 'graduation-cap', 'dumbbell', 'music',
-                // reuse pantry food icons (often handy)
-                ...['carrot', 'leafy-green', 'apple', 'banana', 'cherry', 'citrus', 'grape', 'drumstick', 'beef', 'piggy-bank', 'fish', 'egg', 'milk']
-            ]
-        };
+                'carrot', 'leafy-green', 'apple', 'banana', 'cherry', 'citrus', 'grape', 'drumstick', 'beef', 'piggy-bank', 'fish', 'egg', 'milk'
+            ],
+            pantryColors: ['#94a3b8', '#059669', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#ec4899', '#B2C9AB', '#92A8D1', '#E2B4B4', '#C3B1E1', '#DEB887'],
+            categoryIcons: []
+         };
+         CONFIG.categoryIcons = CONFIG.pantryIcons;
+         CONFIG.ingredientLibraryDefault = [
+            { category: 'Vegetables', icon: 'carrot', groups: [
+                { name: 'Leafy', items: ['spinach', 'lettuce', 'bok choy', 'cabbage'] },
+                { name: 'Root', items: ['carrot', 'potato', 'sweet potato', 'onion', 'garlic', 'ginger'] },
+                { name: 'Common', items: ['tomato', 'cucumber', 'pepper', 'broccoli', 'cauliflower', 'corn', 'mushroom', 'eggplant'] }
+            ]},
+            { category: 'Fruits', icon: 'apple', groups: [
+                { name: 'Daily', items: ['apple', 'banana', 'orange', 'pear', 'grape'] },
+                { name: 'Berries', items: ['strawberry', 'blueberry', 'raspberry'] },
+                { name: 'Tropical', items: ['mango', 'pineapple', 'kiwi', 'avocado'] }
+            ]},
+            { category: 'Meat & Seafood', icon: 'drumstick', groups: [
+                { name: 'Poultry', items: ['chicken breast', 'chicken thigh', 'drumstick'] },
+                { name: 'Red Meat', items: ['beef', 'pork', 'minced meat', 'steak'] },
+                { name: 'Seafood', items: ['fish', 'shrimp', 'salmon', 'tuna'] }
+            ]},
+            { category: 'Egg & Dairy', icon: 'egg', groups: [
+                { name: 'Egg', items: ['egg', 'quail egg'] },
+                { name: 'Dairy', items: ['milk', 'yogurt', 'cheese', 'butter', 'cream'] }
+            ]},
+            { category: 'Staples & Others', icon: 'package', groups: [
+                { name: 'Grains', items: ['rice', 'noodle', 'pasta', 'oat', 'flour', 'bread'] },
+                { name: 'Beans & Nuts', items: ['tofu', 'soybean', 'red bean', 'almond', 'peanut'] },
+                { name: 'Seasoning', items: ['salt', 'sugar', 'soy sauce', 'vinegar', 'cooking oil'] }
+            ]}
+        ];
 
         const apiKey = ""; 
 
@@ -490,6 +635,7 @@
             pantry: JSON.parse(localStorage.getItem(CONFIG.pantryKey) || '[]'),
             currentDate: new Date(),
             selectedDate: new Date(),
+            calendarView: localStorage.getItem('pj_calendar_view') || 'month',
             pendingDeleteId: null,
             editingEntry: null,
             expandedLogs: new Set(),
@@ -499,6 +645,7 @@
             catIconsExpanded: false,
             categoryEditMode: false,
             categoryDraftJson: "",
+            categoryDirty: false,
             draggingCatIdx: null,
             pantryEditingIdx: null,
             pantryTempIcon: 'circle',
@@ -506,7 +653,22 @@
             expiryFeatureEnabled: localStorage.getItem('pj_expiry_enabled') === '1',
             pantrySearch: '',
             pantrySort: localStorage.getItem('pj_pantry_sort') || 'added',
-            pantryTempExpiryEnabled: false
+            pantryView: localStorage.getItem('pj_pantry_view') || 'list',
+            pantryPlayPositions: JSON.parse(localStorage.getItem('pj_pantry_play_pos_v1') || '{}'),
+            pantryPlayZ: 1,
+            pantryTempExpiryEnabled: false,
+            ingredientLibrary: [],
+            ingredientSearch: '',
+            ingredientManageSearch: '',
+            ingredientModalMode: 'manage',
+            libraryEditMode: false,
+            libraryDraftOrderJson: '',
+            libraryDirty: false,
+            collapsedCategories: new Set(),
+            selectedLibraryItems: {}, // { itemName: { qty: 1, icon: '...' } }
+            pendingLibraryFocusCatIdx: null,
+            categoryModalMode: 'category',
+            originalGroupJson: ''
         };
 
         function isFirebaseConfigured() {
@@ -735,14 +897,701 @@
                     name: String(c.name || ''),
                     hex: String(c.hex || '#94a3b8'),
                     icon: String(c.icon || 'circle'),
+                    highlight: !!c.highlight,
                     colorClass: '',
                     textClass: ''
                 })).filter(c => c.id && c.name);
             } catch(e) {}
         }
 
+        function loadIngredientLibrary() {
+            try {
+                const raw = localStorage.getItem('pj_ingredient_library_v1');
+                if (!raw) {
+                    state.ingredientLibrary = JSON.parse(JSON.stringify(CONFIG.ingredientLibraryDefault));
+                    // Initialize collapsed categories
+                    state.collapsedCategories = new Set(state.ingredientLibrary.map(c => c.category));
+                    ensureIngredientLibraryKeys();
+                    return;
+                }
+                const parsed = JSON.parse(raw);
+                if (!Array.isArray(parsed) || !parsed.length) {
+                    state.ingredientLibrary = JSON.parse(JSON.stringify(CONFIG.ingredientLibraryDefault));
+                    state.collapsedCategories = new Set(state.ingredientLibrary.map(c => c.category));
+                    ensureIngredientLibraryKeys();
+                    return;
+                }
+                // Merge icons from default if missing
+                parsed.forEach(p => {
+                    const def = CONFIG.ingredientLibraryDefault.find(d => d.category === p.category);
+                    if (def && !p.icon) p.icon = def.icon;
+                });
+                state.ingredientLibrary = parsed;
+                state.collapsedCategories = new Set(state.ingredientLibrary.map(c => c.category));
+                ensureIngredientLibraryKeys();
+            } catch(e) {
+                state.ingredientLibrary = JSON.parse(JSON.stringify(CONFIG.ingredientLibraryDefault));
+                state.collapsedCategories = new Set(state.ingredientLibrary.map(c => c.category));
+                ensureIngredientLibraryKeys();
+            }
+        }
+
+        function ensureIngredientLibraryKeys() {
+            (state.ingredientLibrary || []).forEach(cat => {
+                if (cat && !Object.prototype.hasOwnProperty.call(cat, '__gid')) {
+                    Object.defineProperty(cat, '__gid', { value: `g_${Date.now()}_${Math.random().toString(16).slice(2)}`, enumerable: false });
+                }
+            });
+        }
+
+        function saveIngredientLibrary() {
+            localStorage.setItem('pj_ingredient_library_v1', JSON.stringify(state.ingredientLibrary));
+            renderIngredientDatalist();
+        }
+
+        function flattenIngredientNames() {
+            const names = [];
+            state.ingredientLibrary.forEach(cat => {
+                (cat.groups || []).forEach(g => (g.items || []).forEach(i => { if (i && i.trim()) names.push(i.trim()); }));
+            });
+            return [...new Set(names)].sort((a,b) => a.localeCompare(b));
+        }
+
+        function renderIngredientDatalist() {
+            const dl = document.getElementById('ingredient-datalist');
+            if (!dl) return;
+            dl.innerHTML = flattenIngredientNames().map(n => `<option value="${n}"></option>`).join('');
+        }
+
+        function updateIngredientCountTip() {
+            const tip = document.getElementById('ingredient-count-tip');
+            if (!tip) return;
+            const count = Object.keys(state.selectedLibraryItems || {}).length;
+            const saveBtn = document.getElementById('ingredient-save-btn');
+            
+            if (state.ingredientModalMode !== 'pick') {
+                tip.classList.add('hidden');
+                return;
+            }
+
+            if (count > 0) {
+                tip.innerText = ` ${count} \u00A0\u00A0items added`;
+                tip.classList.remove('hidden');
+                if (saveBtn) {
+                    saveBtn.innerText = "Add";
+                    saveBtn.className = "w-full bg-theme text-white h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press shadow-theme";
+                }
+            } else {
+                tip.classList.add('hidden');
+                if (saveBtn) {
+                    saveBtn.innerText = "Back";
+                    saveBtn.className = "w-full bg-slate-100 text-slate-400 h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press";
+                }
+            }
+        }
+
+        function openIngredientLibrary(mode = 'manage') {
+            state.ingredientModalMode = mode;
+            state.ingredientSearch = '';
+            state.selectedLibraryItems = {};
+            const se = document.getElementById('ingredient-search');
+            if (se) se.value = '';
+            
+            const saveBtn = document.getElementById('ingredient-save-btn');
+            const addGroupBtn = document.getElementById('add-group-btn-lib');
+            
+            if (mode === 'pick') {
+                if (saveBtn) {
+                    saveBtn.innerText = 'Back';
+                    saveBtn.className = "w-full bg-slate-100 text-slate-400 h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press";
+                    saveBtn.classList.remove('hidden');
+                }
+                if (addGroupBtn) addGroupBtn.classList.add('hidden');
+            } else {
+                if (saveBtn) saveBtn.classList.add('hidden');
+                if (addGroupBtn) addGroupBtn.classList.remove('hidden');
+            }
+            
+            updateIngredientCountTip();
+            renderIngredientLibrary();
+            document.getElementById('ingredient-library-modal').classList.add('active');
+        }
+
+        function closeIngredientLibrary() { 
+            if (state.ingredientModalMode === 'manage') saveIngredientLibrary();
+            document.getElementById('ingredient-library-modal').classList.remove('active'); 
+        }
+
+        function addIngredientCategory() {
+            ensureIngredientLibraryKeys();
+            const base = 'New group';
+            const existing = new Set(state.ingredientLibrary.map(c => c.category));
+            let name = base;
+            let n = 1;
+            while (existing.has(name)) {
+                n += 1;
+                name = `${base} ${n}`;
+            }
+            const idx = state.ingredientLibrary.length;
+            const newCat = { category: name, icon: 'package', groups: [{ name: 'Group 1', items: ['new item'] }] };
+            Object.defineProperty(newCat, '__gid', { value: `g_${Date.now()}_${Math.random().toString(16).slice(2)}`, enumerable: false });
+            state.ingredientLibrary.push(newCat);
+            state.pendingLibraryFocusCatIdx = idx;
+            renderIngredientLibrary();
+            renderIngredientLibraryManageInline();
+            saveIngredientLibrary();
+            setTimeout(() => {
+                const ci = state.pendingLibraryFocusCatIdx;
+                if (ci == null) return;
+                const row = document.getElementById(`lib-group-${ci}`);
+                const inp = document.getElementById(`lib-group-name-${ci}`);
+                row?.scrollIntoView({ block: 'center' });
+                if (inp) { inp.focus(); inp.select(); }
+                state.pendingLibraryFocusCatIdx = null;
+            }, 0);
+        }
+        function addIngredientGroup(catIdx) {
+            state.ingredientLibrary[catIdx].groups.push({ name: `Group ${state.ingredientLibrary[catIdx].groups.length + 1}`, items: ['new item'] });
+            renderIngredientLibrary();
+            renderIngredientLibraryManageInline();
+            saveIngredientLibrary();
+        }
+        function addIngredientItem(catIdx, groupIdx) {
+            state.ingredientLibrary[catIdx].groups[groupIdx].items.push('new item');
+            renderIngredientLibrary();
+            renderIngredientLibraryManageInline();
+            saveIngredientLibrary();
+        }
+
+        function toggleCategoryCollapse(catName) {
+            if (state.collapsedCategories.has(catName)) {
+                state.collapsedCategories.delete(catName);
+            } else {
+                state.collapsedCategories.add(catName);
+            }
+            renderIngredientLibrary();
+            renderIngredientLibraryManageInline();
+        }
+
+        function updateLibraryItemQty(itemName, delta, icon) {
+            if (!state.selectedLibraryItems[itemName]) {
+                if (delta > 0) {
+                    state.selectedLibraryItems[itemName] = { qty: delta, icon: icon };
+                }
+            } else {
+                state.selectedLibraryItems[itemName].qty = Math.max(0, state.selectedLibraryItems[itemName].qty + delta);
+                if (state.selectedLibraryItems[itemName].qty === 0) {
+                    delete state.selectedLibraryItems[itemName];
+                }
+            }
+            renderIngredientLibrary();
+        }
+
+        function saveIngredientLibraryAction() {
+            if (state.ingredientModalMode === 'pick') {
+                const count = Object.keys(state.selectedLibraryItems).length;
+                if (count === 0) {
+                    closeIngredientLibrary();
+                    return;
+                }
+                Object.entries(state.selectedLibraryItems).forEach(([name, data]) => {
+                    addStockRow(name, data.qty, data.icon);
+                });
+                closeIngredientLibrary();
+            } else {
+                saveIngredientLibrary();
+                closeIngredientLibrary();
+            }
+        }
+
+        function showConfirm(title, desc, onOk) {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-desc').innerText = desc;
+            const okBtn = document.getElementById('confirm-ok-btn');
+            const cancelBtn = document.getElementById('confirm-cancel-btn');
+            const modal = document.getElementById('confirm-modal');
+            
+            const clear = () => {
+                okBtn.onclick = null;
+                cancelBtn.onclick = null;
+                modal.classList.remove('active');
+            };
+            
+            okBtn.onclick = () => { onOk(); clear(); };
+            cancelBtn.onclick = clear;
+            modal.classList.add('active');
+        }
+
+        function deleteIngredientCategoryConfirm(ci) {
+            const cat = state.ingredientLibrary[ci];
+            showConfirm(
+                'Delete Category?',
+                `All items in "${cat.category}" will be removed.`,
+                () => {
+                    state.ingredientLibrary.splice(ci, 1);
+                    renderIngredientLibrary();
+                    renderIngredientLibraryManageInline();
+                    saveIngredientLibrary();
+                }
+            );
+        }
+
+        function renderIngredientLibrary() {
+            const wrap = document.getElementById('ingredient-library-list');
+            if (!wrap) return;
+            const q = (state.ingredientSearch || '').trim().toLowerCase();
+            
+            if (state.ingredientModalMode === 'pick') {
+                // "Pick" mode logic
+                let html = '';
+                
+                // Search result or "Add new"
+                if (q) {
+                    let itemsFound = [];
+                    state.ingredientLibrary.forEach(cat => {
+                        (cat.groups || []).forEach(g => {
+                            (g.items || []).forEach(it => {
+                                if ((it || '').toLowerCase().includes(q)) {
+                                    itemsFound.push({ name: it, icon: cat.icon });
+                                }
+                            });
+                        });
+                    });
+
+                    const exactMatch = itemsFound.find(i => i.name.toLowerCase() === q);
+                    if (!exactMatch) {
+                        // Option to add new
+                        html += `
+                            <div class="inner-stroke rounded-2xl p-4 bg-slate-50 flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-slate-400"><i data-lucide="plus" class="w-5 h-5"></i></div>
+                                    <span class="text-sm font-800 text-slate-900">Add "${q}"</span>
+                                </div>
+                                ${renderQtySelector(q, CONFIG.pantryIcons[0])}
+                            </div>
+                        `;
+                    }
+                    
+                    if (itemsFound.length > 0) {
+                        html += `
+                            <div class="space-y-2 mb-4">
+                                <div class="label-style text-slate-300 ml-1 mb-2">Search Results</div>
+                                ${itemsFound.map(i => `
+                                    <div class="flex items-center justify-between p-3 rounded-2xl bg-white inner-stroke">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400"><i data-lucide="${i.icon || 'package'}" class="w-4 h-4"></i></div>
+                                            <span class="text-sm font-700 text-slate-700">${i.name}</span>
+                                        </div>
+                                        ${renderQtySelector(i.name, i.icon)}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }
+                }
+
+                // Categories
+                state.ingredientLibrary.forEach(cat => {
+                    const isCollapsed = state.collapsedCategories.has(cat.category);
+                    const allItems = [];
+                    (cat.groups || []).forEach(g => (g.items || []).forEach(it => allItems.push(it)));
+                    
+                    html += `
+                        <div class="inner-stroke rounded-2xl bg-white overflow-hidden mb-3">
+                            <div onclick="toggleCategoryCollapse('${cat.category}')" class="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400"><i data-lucide="${cat.icon || 'package'}" class="w-5 h-5"></i></div>
+                                    <span class="text-sm font-800 text-slate-900">${cat.category}</span>
+                                </div>
+                                <i data-lucide="${isCollapsed ? 'chevron-down' : 'chevron-up'}" class="w-4 h-4 text-slate-300"></i>
+                            </div>
+                            <div class="${isCollapsed ? 'hidden' : 'block'} border-t border-slate-50 p-2 space-y-1">
+                                ${allItems.map(it => `
+                                    <div class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50">
+                                        <span class="text-sm font-700 text-slate-600 ml-2">${it}</span>
+                                        ${renderQtySelector(it, cat.icon)}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                wrap.innerHTML = html;
+            } else {
+                // "Manage" mode logic
+                wrap.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="label-style text-slate-300">Groups</span>
+                    </div>
+                    ${state.ingredientLibrary.map((cat, ci) => {
+                        const allItems = [];
+                        (cat.groups || []).forEach((g, gi) => {
+                            (g.items || []).forEach((it, ii) => {
+                                allItems.push({ name: it, gi, ii });
+                            });
+                        });
+                        
+                        const filtered = allItems.filter(i => !q || (i.name || '').toLowerCase().includes(q));
+                        if (q && filtered.length === 0) return '';
+                        
+                        const isCollapsed = state.collapsedCategories.has(cat.category);
+                        
+                        return `
+                            <div id="lib-group-${ci}" class="inner-stroke rounded-2xl p-4 space-y-3 bg-white mb-3">
+                                <div class="flex items-center justify-between gap-2" onclick="toggleCategoryCollapse('${cat.category}')">
+                                    <div class="flex items-center gap-2 flex-1">
+                                        <div onclick="event.stopPropagation(); openLibraryGroupSettings(${ci})" class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 btn-press"><i data-lucide="${cat.icon || 'package'}" class="w-5 h-5"></i></div>
+                                        <input id="lib-group-name-${ci}" value="${cat.category || ''}" oninput="state.ingredientLibrary[${ci}].category=this.value; saveIngredientLibrary()" onclick="event.stopPropagation()" class="flex-1 bg-slate-50 rounded-xl px-3 py-2 text-sm font-800 text-slate-800 outline-none">
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="${isCollapsed ? 'chevron-down' : 'chevron-up'}" class="w-4 h-4 text-slate-300"></i>
+                                    </div>
+                                </div>
+                                <div class="${isCollapsed ? 'hidden' : 'block'} space-y-2 mt-2">
+                                    ${filtered.map(i => `
+                                        <div class="flex items-center gap-2">
+                                            <input value="${i.name || ''}" oninput="state.ingredientLibrary[${ci}].groups[${i.gi}].items[${i.ii}]=this.value; saveIngredientLibrary()" class="flex-1 bg-white border border-slate-100 rounded-xl px-3 py-2 text-xs font-700 text-slate-700 outline-none">
+                                            <button onclick="state.ingredientLibrary[${ci}].groups[${i.gi}].items.splice(${i.ii},1); saveIngredientLibrary(); renderIngredientLibrary(); renderIngredientLibraryManageInline()" class="w-8 h-8 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"><i data-lucide='x' class='w-4 h-4'></i></button>
+                                        </div>
+                                    `).join('')}
+                                    <div class="flex justify-center pt-1">
+                                        <button onclick="addIngredientItem(${ci}, 0)" class="text-[13px] font-800 text-theme py-2">Add item</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                `;
+            }
+            updateIngredientCountTip();
+            lucide.createIcons();
+        }
+
+        function renderIngredientLibraryManageInline() {
+            const wrap = document.getElementById('ingredient-library-list-manage');
+            if (!wrap) return;
+            wrap.innerHTML = `
+                <div class="flex justify-between items-center mb-4">
+                    <span class="label-style text-slate-300">Groups</span>
+                </div>
+                ${state.ingredientLibrary.map((cat, ci) => {
+                    if (state.libraryEditMode) {
+                        return `
+                            <div data-lib-row="1" data-lib-gid="${cat.__gid}" class="inner-stroke rounded-2xl p-4 bg-white mb-3 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div data-lib-handle="1" class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center cursor-grab active:cursor-grabbing drag-handle">
+                                        <i data-lucide="grip-vertical" class="w-5 h-5"></i>
+                                    </div>
+                                    <div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center">
+                                        <i data-lucide="${cat.icon || 'package'}" class="w-5 h-5"></i>
+                                    </div>
+                                    <span class="text-sm font-800 text-slate-900">${cat.category || ''}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    const allItems = [];
+                    (cat.groups || []).forEach((g, gi) => {
+                        (g.items || []).forEach((it, ii) => {
+                            allItems.push({ name: it, gi, ii });
+                        });
+                    });
+
+                    const isCollapsed = state.collapsedCategories.has(cat.category);
+
+                    return `
+                        <div data-lib-row="1" data-lib-gid="${cat.__gid}" id="lib-group-${ci}" class="inner-stroke rounded-2xl p-4 space-y-3 bg-white mb-3">
+                            <div class="flex items-center justify-between gap-2" onclick="toggleCategoryCollapse('${cat.category}')">
+                                <div class="flex items-center gap-2 flex-1">
+                                    <div onclick="event.stopPropagation(); openLibraryGroupSettings(${ci})" class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 btn-press"><i data-lucide="${cat.icon || 'package'}" class="w-5 h-5"></i></div>
+                                    <input id="lib-group-name-${ci}" value="${cat.category || ''}" oninput="state.ingredientLibrary[${ci}].category=this.value; saveIngredientLibrary()" onclick="event.stopPropagation()" class="flex-1 bg-slate-50 rounded-xl px-3 py-2 text-sm font-800 text-slate-800 outline-none">
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="${isCollapsed ? 'chevron-down' : 'chevron-up'}" class="w-4 h-4 text-slate-300"></i>
+                                </div>
+                            </div>
+                            <div class="${isCollapsed ? 'hidden' : 'block'} space-y-2 mt-2">
+                                ${allItems.map(i => `
+                                    <div class="flex items-center gap-2">
+                                        <input value="${i.name || ''}" oninput="state.ingredientLibrary[${ci}].groups[${i.gi}].items[${i.ii}]=this.value; saveIngredientLibrary()" class="flex-1 bg-white border border-slate-100 rounded-xl px-3 py-2 text-xs font-700 text-slate-700 outline-none">
+                                        <button onclick="state.ingredientLibrary[${ci}].groups[${i.gi}].items.splice(${i.ii},1); saveIngredientLibrary(); renderIngredientLibrary(); renderIngredientLibraryManageInline()" class="w-8 h-8 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center"><i data-lucide='x' class='w-4 h-4'></i></button>
+                                    </div>
+                                `).join('')}
+                                <div class="flex justify-center pt-1">
+                                    <button onclick="addIngredientItem(${ci}, 0)" class="text-[13px] font-800 text-theme py-2">Add item</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            `;
+            lucide.createIcons();
+            updateLibraryReorderUI();
+            if (state.libraryEditMode) setupLibraryTouchReorder();
+        }
+
+        function openLibraryGroupSettings(ci) {
+            state.categoryModalMode = 'group';
+            state.libraryEditingIdx = ci;
+            const group = state.ingredientLibrary[ci];
+            if (!group) return;
+
+            state.catTempIcon = group.icon || 'package';
+            state.catIconsExpanded = false;
+            state.originalGroupJson = JSON.stringify({ name: String(group.category || '').trim(), icon: state.catTempIcon });
+
+            document.getElementById('cat-edit-name-wrap')?.classList.remove('hidden');
+            document.getElementById('cat-color-wrap')?.classList.add('hidden');
+            document.getElementById('cat-highlight-wrap')?.classList.add('hidden');
+            document.getElementById('cat-delete-btn')?.classList.remove('hidden');
+
+            const title = document.querySelector('#category-edit-modal .label-style');
+            if (title) title.innerText = 'Group Settings';
+
+            const nameInput = document.getElementById('cat-edit-name');
+            if (nameInput) {
+                nameInput.value = group.category || '';
+                nameInput.oninput = () => {
+                    state.ingredientLibrary[ci].category = nameInput.value;
+                    checkCategoryChanges();
+                };
+            }
+
+            const delBtn = document.getElementById('cat-delete-btn');
+            if (delBtn) {
+                delBtn.onclick = () => {
+                    const displayName = (state.ingredientLibrary[ci]?.category || 'Group');
+                    showConfirm(
+                        'Delete Group?',
+                        `All items in "${displayName}" will be removed.`,
+                        () => {
+                            state.ingredientLibrary.splice(ci, 1);
+                            saveIngredientLibrary();
+                            closeCategoryEdit();
+                            renderIngredientLibrary();
+                            renderIngredientLibraryManageInline();
+                        }
+                    );
+                };
+            }
+
+            const saveBtn = document.getElementById('save-cat-btn');
+            saveBtn.innerText = 'Back';
+            saveBtn.className = "flex-1 bg-slate-100 text-slate-400 h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press";
+            saveBtn.onclick = () => {
+                if (saveBtn.innerText === 'Back') {
+                    closeCategoryEdit();
+                    return;
+                }
+                const g = state.ingredientLibrary[state.libraryEditingIdx];
+                if (!g) { closeCategoryEdit(); return; }
+                const nm = String(document.getElementById('cat-edit-name')?.value || '').trim() || g.category || 'Group';
+                g.category = nm;
+                g.icon = state.catTempIcon || g.icon || 'package';
+                saveIngredientLibrary();
+                closeCategoryEdit();
+                renderIngredientLibrary();
+                renderIngredientLibraryManageInline();
+            };
+
+            renderCategoryIconGrid();
+            checkCategoryChanges();
+            document.getElementById('category-edit-modal').classList.add('active');
+        }
+
+        function updateLibraryReorderUI() {
+            const saveBtn = document.getElementById('lib-edit-save-btn');
+            const toggleBtn = document.getElementById('lib-edit-toggle');
+            if (!saveBtn || !toggleBtn) return;
+
+            if (!state.libraryEditMode) {
+                saveBtn.classList.add('hidden');
+                saveBtn.disabled = true;
+                saveBtn.className = "w-10 h-10 rounded-2xl bg-slate-100 text-slate-300 flex items-center justify-center btn-press hidden";
+                toggleBtn.innerHTML = `<i data-lucide="move" class="w-5 h-5"></i>`;
+                toggleBtn.className = "w-10 h-10 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center btn-press";
+                lucide.createIcons();
+                return;
+            }
+
+            saveBtn.classList.remove('hidden');
+            toggleBtn.innerHTML = `<i data-lucide="x" class="w-5 h-5"></i>`;
+            toggleBtn.className = "w-10 h-10 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center btn-press";
+
+            if (state.libraryDirty) {
+                saveBtn.disabled = false;
+                saveBtn.className = "w-10 h-10 rounded-2xl bg-theme text-white flex items-center justify-center btn-press";
+            } else {
+                saveBtn.disabled = true;
+                saveBtn.className = "w-10 h-10 rounded-2xl bg-slate-100 text-slate-300 flex items-center justify-center btn-press";
+            }
+            lucide.createIcons();
+        }
+
+        function toggleLibraryEditMode() {
+            if (state.libraryEditMode) {
+                cancelLibraryReorder();
+                return;
+            }
+            ensureIngredientLibraryKeys();
+            state.libraryEditMode = true;
+            state.libraryDraftOrderJson = JSON.stringify(state.ingredientLibrary.map(c => c.__gid));
+            state.libraryDirty = false;
+            state.collapsedCategories = new Set(state.ingredientLibrary.map(c => c.category));
+            renderIngredientLibraryManageInline();
+        }
+
+        function cancelLibraryReorder() {
+            try {
+                const ids = JSON.parse(state.libraryDraftOrderJson || '[]');
+                if (Array.isArray(ids) && ids.length) {
+                    const map = new Map(state.ingredientLibrary.map(c => [c.__gid, c]));
+                    const ordered = ids.map(id => map.get(id)).filter(Boolean);
+                    const rest = state.ingredientLibrary.filter(c => !ids.includes(c.__gid));
+                    state.ingredientLibrary = ordered.concat(rest);
+                }
+            } catch (_) {}
+            state.libraryEditMode = false;
+            state.libraryDirty = false;
+            renderIngredientLibraryManageInline();
+            renderIngredientLibrary();
+        }
+
+        function saveLibraryReorder() {
+            if (!state.libraryEditMode) return;
+            if (!state.libraryDirty) return;
+            saveIngredientLibrary();
+            state.libraryEditMode = false;
+            state.libraryDirty = false;
+            renderIngredientLibraryManageInline();
+            renderIngredientLibrary();
+        }
+
+        function setupLibraryTouchReorder() {
+            const wrap = document.getElementById('ingredient-library-list-manage');
+            if (!wrap) return;
+            const handles = wrap.querySelectorAll('[data-lib-handle="1"]');
+            handles.forEach(h => {
+                h.onpointerdown = (e) => {
+                    if (!state.libraryEditMode) return;
+                    e.preventDefault();
+                    const row = h.closest('[data-lib-row="1"]');
+                    if (!row) return;
+                    const rect = row.getBoundingClientRect();
+                    const placeholder = document.createElement('div');
+                    placeholder.style.height = `${rect.height}px`;
+                    placeholder.className = "inner-stroke rounded-2xl bg-slate-50";
+                    row.parentNode.insertBefore(placeholder, row.nextSibling);
+
+                    const startY = e.clientY;
+                    const startTop = rect.top;
+                    const startLeft = rect.left;
+                    const startWidth = rect.width;
+
+                    row.classList.add('dragging-fixed');
+                    row.classList.add('dragging-fixed');
+                    row.style.top = `${startTop}px`;
+                    row.style.left = `${startLeft}px`;
+                    row.style.width = `${startWidth}px`;
+                    row.style.height = `${rect.height}px`;
+
+                    const move = (ev) => {
+                        ev.preventDefault();
+                        const dy = ev.clientY - startY;
+                        row.style.top = `${startTop + dy}px`;
+                        const el = document.elementFromPoint(ev.clientX, ev.clientY);
+                        const over = el ? el.closest('[data-lib-row="1"]') : null;
+                        if (!over || over === row) return;
+                        const overRect = over.getBoundingClientRect();
+                        if (ev.clientY < overRect.top + overRect.height / 2) {
+                            over.parentNode.insertBefore(placeholder, over);
+                        } else {
+                            over.parentNode.insertBefore(placeholder, over.nextSibling);
+                        }
+                    };
+
+                    const up = () => {
+                        document.removeEventListener('pointermove', move);
+                        document.removeEventListener('pointerup', up);
+                        document.removeEventListener('pointercancel', up);
+
+                        row.classList.remove('dragging-fixed');
+                        row.style.top = '';
+                        row.style.left = '';
+                        row.style.width = '';
+                        row.style.height = '';
+
+                        placeholder.parentNode.insertBefore(row, placeholder);
+                        placeholder.remove();
+
+                        const ids = Array.from(wrap.querySelectorAll('[data-lib-row="1"]')).map(n => n.dataset.libGid).filter(Boolean);
+                        const map = new Map(state.ingredientLibrary.map(c => [c.__gid, c]));
+                        const ordered = ids.map(id => map.get(id)).filter(Boolean);
+                        const rest = state.ingredientLibrary.filter(c => !ids.includes(c.__gid));
+                        state.ingredientLibrary = ordered.concat(rest);
+
+                        state.libraryDirty = JSON.stringify(ids) !== state.libraryDraftOrderJson;
+                        updateLibraryReorderUI();
+                    };
+
+                    document.addEventListener('pointermove', move);
+                    document.addEventListener('pointerup', up);
+                    document.addEventListener('pointercancel', up);
+                };
+            });
+        }
+
+        function openLibraryIconPicker(ci) {
+            state.categoryModalMode = 'iconPicker';
+            state.libraryEditingIdx = ci;
+            const cat = state.ingredientLibrary[ci];
+            state.catTempIcon = cat.icon || 'package';
+            state.catIconsExpanded = false;
+            
+            // Re-use category edit modal for icon picking
+            document.getElementById('cat-edit-name-wrap')?.classList.add('hidden');
+            document.getElementById('cat-color-wrap')?.classList.add('hidden');
+            document.getElementById('cat-highlight-wrap')?.classList.add('hidden');
+            document.getElementById('cat-delete-btn')?.classList.add('hidden');
+            
+            const title = document.querySelector('#category-edit-modal .label-style');
+            if (title) title.innerText = 'Change Icon';
+            
+            renderCategoryIconGrid();
+            
+            const saveBtn = document.getElementById('save-cat-btn');
+            saveBtn.innerText = 'Confirm';
+            saveBtn.className = "flex-1 bg-theme text-white h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press shadow-theme";
+            saveBtn.onclick = () => {
+                state.ingredientLibrary[state.libraryEditingIdx].icon = state.catTempIcon;
+                closeCategoryEdit();
+                renderIngredientLibrary();
+                renderIngredientLibraryManageInline();
+                saveIngredientLibrary();
+            };
+            
+            document.getElementById('category-edit-modal').classList.add('active');
+        }
+
+        function renderQtySelector(itemName, icon) {
+            const item = state.selectedLibraryItems[itemName];
+            const qty = item ? item.qty : 0;
+            if (qty === 0) {
+                return `<button onclick="updateLibraryItemQty('${itemName.replace(/'/g, "\\'")}', 1, '${icon}')" class="qty-btn qty-btn-minus"><i data-lucide="plus" class="w-4 h-4"></i></button>`;
+            }
+            return `
+                <div class="flex items-center gap-2">
+                    <button onclick="updateLibraryItemQty('${itemName.replace(/'/g, "\\'")}', -1, '${icon}')" class="qty-btn qty-btn-minus"><i data-lucide="minus" class="w-3.5 h-3.5"></i></button>
+                    <input type="number" value="${qty}" onchange="state.selectedLibraryItems['${itemName.replace(/'/g, "\\'")}'].qty = Math.max(0, parseInt(this.value)||0); if(state.selectedLibraryItems['${itemName.replace(/'/g, "\\'")}'].qty===0) delete state.selectedLibraryItems['${itemName.replace(/'/g, "\\'")}']; renderIngredientLibrary()" class="w-8 bg-transparent text-center text-sm font-800 outline-none text-slate-900">
+                    <button onclick="updateLibraryItemQty('${itemName.replace(/'/g, "\\'")}', 1, '${icon}')" class="qty-btn qty-btn-plus"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
+                </div>
+            `;
+        }
+
         function saveCategoriesToStorage() {
-            const payload = CONFIG.categories.map(c => ({ id: c.id, name: c.name, hex: c.hex, icon: c.icon }));
+            const payload = CONFIG.categories.map(c => ({ id: c.id, name: c.name, hex: c.hex, icon: c.icon, highlight: !!c.highlight }));
             localStorage.setItem(CONFIG.categoriesKey, JSON.stringify(payload));
             scheduleSync();
         }
@@ -817,6 +1666,32 @@
 
         function initFormDate() { document.getElementById('log-date').value = new Date().toISOString().split('T')[0]; }
 
+        function setPantryView(view) {
+            state.pantryView = view;
+            localStorage.setItem('pj_pantry_view', view);
+            updatePantryViewUI();
+            if (!document.getElementById('tab-pantry').classList.contains('hidden')) {
+                if (state.pantryView === 'list') renderPantry();
+                else renderPantryPlay();
+            }
+        }
+
+        function updatePantryViewUI() {
+            const listBtn = document.getElementById('pantry-view-list-btn');
+            const playBtn = document.getElementById('pantry-view-play-btn');
+            if (listBtn && playBtn) {
+                if (state.pantryView === 'play') {
+                    playBtn.className = "px-4 py-2 rounded-xl text-[10px] font-800 transition-all bg-white text-theme shadow-sm";
+                    listBtn.className = "px-4 py-2 rounded-xl text-[10px] font-800 transition-all text-slate-400";
+                } else {
+                    listBtn.className = "px-4 py-2 rounded-xl text-[10px] font-800 transition-all bg-white text-theme shadow-sm";
+                    playBtn.className = "px-4 py-2 rounded-xl text-[10px] font-800 transition-all text-slate-400";
+                }
+            }
+            document.getElementById('pantry-view-list')?.classList.toggle('hidden', state.pantryView === 'play');
+            document.getElementById('pantry-view-play')?.classList.toggle('hidden', state.pantryView !== 'play');
+        }
+
         function showTab(tab) {
             document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('[id^="nav-"]').forEach(el => {
@@ -824,15 +1699,20 @@
                 el.classList.add('text-slate-400');
             });
             document.getElementById(`tab-${tab}`).classList.remove('hidden');
-            const titleMap = { 'log': 'Log', 'calendar': 'View', 'pantry': 'Box', 'other': 'More' };
+            const titleMap = { 'log': 'Log', 'calendar': 'View', 'pantry': 'My Stock', 'other': 'More' };
             document.getElementById('main-title').innerText = titleMap[tab] || 'Matti';
             const navBtn = document.getElementById(`nav-${tab}`);
             if (navBtn) {
                 navBtn.classList.remove('text-slate-400');
                 navBtn.classList.add('text-theme');
             }
-            if(tab === 'calendar') renderCalendar();
-            if(tab === 'pantry') renderPantry();
+            const curr = document.getElementById('currency-switcher');
+            if (curr) curr.classList.toggle('hidden', tab === 'pantry' || tab === 'other');
+            const pantrySwitch = document.getElementById('pantry-view-switcher');
+            if (pantrySwitch) pantrySwitch.classList.toggle('hidden', tab !== 'pantry');
+            if(tab === 'calendar') renderCalendarView();
+            if(tab === 'pantry') { updatePantryViewUI(); if (state.pantryView === 'list') renderPantry(); else renderPantryPlay(); }
+            if(tab === 'other') renderIngredientLibraryManageInline();
         }
 
         function setCurrency(curr) {
@@ -850,7 +1730,7 @@
             calcConversion();
             // 全局联动渲染
             renderRecent();
-            if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar();
+            if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendarView();
         }
 
         function calcConversion() {
@@ -874,16 +1754,37 @@
 
         function selectCat(cat) { state.selectedCategory = cat; saveToStorage(); renderCategories(); }
 
-        function addStockRow(name = '', qty = '') {
+        function addStockRow(name = '', qty = '1', icon = '') {
             const div = document.createElement('div');
-            div.className = "flex gap-2 items-center bg-transparent p-3 rounded-2xl inner-stroke item-row";
+            div.className = "flex gap-3 items-center bg-transparent p-3 rounded-2xl inner-stroke item-row";
+            div.dataset.icon = icon;
             div.innerHTML = `
-                <input type="text" placeholder="e.g. Eggs" required value="${name}" class="item-name flex-1 bg-transparent text-xs font-700 outline-none px-1 text-slate-700">
-                <input type="text" placeholder="1" value="${qty}" class="item-qty w-16 bg-transparent text-xs font-800 outline-none text-right px-1 border-l">
-                <button type="button" onclick="this.parentElement.remove()" class="text-slate-300 pl-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+                <button type="button" onclick="this.parentElement.remove()" class="text-slate-300"><i data-lucide="x" class="w-4 h-4"></i></button>
+                <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400"><i data-lucide="${icon || 'package'}" class="w-4 h-4"></i></div>
+                <input type="text" list="ingredient-datalist" placeholder="e.g. Eggs" required value="${name}" class="item-name flex-1 bg-transparent text-xs font-700 outline-none text-slate-700">
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="const inp=this.nextElementSibling; inp.value=Math.max(1, (parseInt(inp.value)||1)-1)" class="qty-btn qty-btn-minus"><i data-lucide="minus" class="w-3.5 h-3.5"></i></button>
+                    <input type="number" placeholder="1" value="${qty}" onkeydown="handleQtyKey(event)" class="item-qty w-8 bg-transparent text-xs font-800 outline-none text-center">
+                    <button type="button" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||1)+1" class="qty-btn qty-btn-plus"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
+                </div>
             `;
             document.getElementById('stock-container').appendChild(div); 
             lucide.createIcons();
+        }
+
+        function handleQtyKey(e) {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                e.target.value = Math.max(1, (parseInt(e.target.value) || 1) - 1);
+                // Trigger change event if needed
+                const event = new Event('change', { bubbles: true });
+                e.target.dispatchEvent(event);
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                e.target.value = (parseInt(e.target.value) || 1) + 1;
+                const event = new Event('change', { bubbles: true });
+                e.target.dispatchEvent(event);
+            }
         }
 
        // 修改 index.html 里的请求部分
@@ -923,7 +1824,8 @@ async function processImage(input) {
             if(!val) return;
             const items = Array.from(document.querySelectorAll('#log-form .item-row')).map(row => ({
                 name: row.querySelector('.item-name').value,
-                qty: row.querySelector('.item-qty').value
+                qty: row.querySelector('.item-qty').value,
+                icon: row.dataset.icon
             })).filter(i => i.name.trim() !== '');
             const entry = {
                 id: Date.now(),
@@ -943,7 +1845,13 @@ async function processImage(input) {
                     existing.max = Math.max(existing.max, existing.qty);
                     if (!existing.addedAt) existing.addedAt = Date.now();
                 } else {
-                    state.pantry.push({ name: item.name, qty: qtyVal, max: qtyVal, customIcon: CONFIG.pantryIcons[0], customColor: '#94a3b8', addedAt: Date.now() });
+                    // Try to find default icon for this item
+                    let defIcon = CONFIG.pantryIcons[0];
+                    state.ingredientLibrary.forEach(cat => {
+                        const hasItem = (cat.groups || []).some(g => (g.items || []).some(i => i.toLowerCase() === item.name.toLowerCase()));
+                        if (hasItem) defIcon = cat.icon || defIcon;
+                    });
+                    state.pantry.push({ name: item.name, qty: qtyVal, max: qtyVal, customIcon: item.icon || defIcon, customColor: '#94a3b8', addedAt: Date.now() });
                 }
             });
             saveToStorage();
@@ -953,18 +1861,37 @@ async function processImage(input) {
             calcConversion(); renderRecent();
         }
 
+        function togglePantrySort() {
+            state.pantrySort = state.pantrySort === 'added' ? 'expiry' : 'added';
+            localStorage.setItem('pj_pantry_sort', state.pantrySort);
+            renderPantry();
+        }
+
         function renderPantry() {
+            if (state.pantryView === 'play') return;
             const list = document.getElementById('pantry-list');
             const usedList = document.getElementById('used-up-list');
             const usedSection = document.getElementById('used-up-section');
-            const stats = document.getElementById('pantry-stats');
             const activeItems = state.pantry.filter(i => i.qty > 0);
             const usedItems = state.pantry.filter(i => i.qty <= 0);
-            stats.innerText = `Total ${activeItems.length} types of items`;
             const q = (state.pantrySearch || '').trim().toLowerCase();
             const filteredActive = q ? activeItems.filter(i => (i.name || '').toLowerCase().includes(q)) : activeItems;
 
-            // Sort
+            // Sort UI Update
+            const sortIcon = document.getElementById('pantry-sort-icon');
+            if (sortIcon) {
+                const iconName = state.pantrySort === 'expiry' ? 'timer' : 'arrow-down-narrow-wide';
+                sortIcon.setAttribute('data-lucide', iconName);
+                lucide.createIcons();
+            }
+
+            // Count label
+            const countLabel = document.getElementById('pantry-count-label');
+            if (countLabel) {
+                countLabel.innerText = `${activeItems.length} items in stock`;
+            }
+
+            // Sort logic
             const sortMode = state.pantrySort || 'added';
             const sortedActive = filteredActive.slice().sort((a,b) => {
                 const aAdded = a.addedAt || 0, bAdded = b.addedAt || 0;
@@ -979,39 +1906,155 @@ async function processImage(input) {
                 return bAdded - aAdded; // newest first
             });
 
-            // Expiring soon overview
-            const soonBox = document.getElementById('pantry-expiring-soon');
-            if (state.expiryFeatureEnabled) {
-                const soon = activeItems
-                    .filter(i => i.expiresAt)
-                    .map(i => ({ item:i, d: daysLeft(i.expiresAt) }))
-                    .filter(x => x.d != null && x.d <= 5)
-                    .sort((a,b) => a.d - b.d)
-                    .slice(0, 3);
-                if (soon.length) {
-                    soonBox.classList.remove('hidden');
-                    soonBox.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <div class="text-[10px] font-900 uppercase tracking-widest text-slate-300">Expiring Soon</div>
-                            <div class="text-[10px] font-900 uppercase tracking-widest text-theme">${soon.length}</div>
-                        </div>
-                        <div class="mt-3 space-y-2">
-                            ${soon.map(x => `<div class="flex justify-between text-[11px] font-800 text-slate-700"><span>${x.item.name}</span><span class="${x.d<=0?'text-rose-500':'text-slate-400'}">${x.d<=0?'Expired':`${x.d}d`}</span></div>`).join('')}
-                        </div>
-                    `;
-                } else {
-                    soonBox.classList.add('hidden');
-                }
-            } else {
-                soonBox.classList.add('hidden');
-            }
-
             if (sortedActive.length === 0) { list.innerHTML = `<div class="py-10 text-center text-slate-200 label-style italic">${q ? 'No matches' : 'Box is empty'}</div>`; }
             else { list.innerHTML = sortedActive.map(item => createPantryItemHTML(item, state.pantry.indexOf(item), false)).join(''); }
             if (usedItems.length > 0) { usedSection.classList.remove('hidden'); usedList.innerHTML = usedItems.map(item => createPantryItemHTML(item, state.pantry.indexOf(item), true)).join(''); }
             else { usedSection.classList.add('hidden'); }
             document.querySelectorAll('#tab-pantry .swipe-container').forEach(setupSwipe);
             lucide.createIcons();
+        }
+
+        function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
+
+        function savePantryPlayPositions() {
+            localStorage.setItem('pj_pantry_play_pos_v1', JSON.stringify(state.pantryPlayPositions || {}));
+        }
+
+        function getPantryPlayKey(item) {
+            return (item?.name || '').trim().toLowerCase();
+        }
+
+        function fmtExpiryLeft(expiresAt) {
+            if (!expiresAt) return '';
+            const d = daysLeft(expiresAt);
+            if (!d || d < 1) return '';
+            return `${d}d`;
+        }
+
+        function renderPantryPlay() {
+            const area = document.getElementById('pantry-play-area');
+            if (!area) return;
+            const activeItems = state.pantry.filter(i => i.qty > 0);
+            const rect = area.getBoundingClientRect();
+            const w = rect.width || 320;
+            const h = rect.height || 480;
+            const bubbleW = 124;
+            const bubbleH = 124;
+            const radius = 52;
+            const pad = 14;
+
+            const minX = pad + radius;
+            const maxX = w - pad - radius;
+            const minY = pad + radius;
+            const maxY = h - pad - radius - (bubbleH - 72);
+
+            const positions = state.pantryPlayPositions || {};
+            const keys = activeItems.map(getPantryPlayKey).filter(Boolean);
+            keys.forEach((k, idx) => {
+                if (!positions[k]) {
+                    const cols = Math.max(1, Math.floor((w - pad * 2) / (bubbleW + 12)));
+                    const col = idx % cols;
+                    const row = Math.floor(idx / cols);
+                    const x = clamp(pad + radius + col * (bubbleW + 12), minX, maxX);
+                    const y = clamp(pad + radius + row * (bubbleH + 16), minY, maxY);
+                    positions[k] = { x, y, z: 1 };
+                }
+            });
+            Object.keys(positions).forEach(k => { if (!keys.includes(k)) delete positions[k]; });
+            state.pantryPlayPositions = positions;
+            savePantryPlayPositions();
+
+            const ringR = 44;
+            const c = 2 * Math.PI * ringR;
+
+            area.innerHTML = activeItems.map((item) => {
+                const key = getPantryPlayKey(item);
+                const pos = positions[key] || { x: minX, y: minY, z: 1 };
+                const x = clamp(pos.x, minX, maxX);
+                const y = clamp(pos.y, minY, maxY);
+                const z = pos.z || 1;
+
+                const pct = item.max ? clamp(item.qty / item.max, 0, 1) : 0;
+                const dash = c * pct;
+                const col = item.customColor || '#94a3b8';
+                const exp = state.expiryFeatureEnabled ? fmtExpiryLeft(item.expiresAt) : '';
+
+                return `
+                    <div class="play-bubble" data-play-key="${key}" style="left:${x - bubbleW / 2}px; top:${y - radius}px; z-index:${z}">
+                        <div class="play-bubble-circle">
+                            <div class="play-ring">
+                                <svg viewBox="0 0 104 104">
+                                    <circle cx="52" cy="52" r="${ringR}" fill="none" stroke="#e2e8f0" stroke-width="7"></circle>
+                                    <circle cx="52" cy="52" r="${ringR}" fill="none" stroke="${col}" stroke-width="7" stroke-linecap="round"
+                                        stroke-dasharray="${dash} ${c - dash}" transform="rotate(-90 52 52)"></circle>
+                                </svg>
+                            </div>
+                            <div class="play-bubble-center">
+                                <div class="play-bubble-name">${item.name}</div>
+                                ${exp ? `<div class="play-bubble-exp">${exp}</div>` : ``}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            setupPantryPlayDrag(area, { bubbleW, bubbleH, radius, pad });
+        }
+
+        function setupPantryPlayDrag(area, dims) {
+            const rect = area.getBoundingClientRect();
+            const w = rect.width || 320;
+            const h = rect.height || 480;
+            const radius = dims.radius;
+            const bubbleH = dims.bubbleH;
+            const pad = dims.pad;
+
+            const minX = pad + radius;
+            const maxX = w - pad - radius;
+            const minY = pad + radius;
+            const maxY = h - pad - radius - (bubbleH - 72);
+
+            area.querySelectorAll('.play-bubble').forEach(el => {
+                el.onpointerdown = (e) => {
+                    e.preventDefault();
+                    const key = el.dataset.playKey;
+                    if (!key) return;
+                    const areaRect = area.getBoundingClientRect();
+
+                    const cur = state.pantryPlayPositions[key] || { x: minX, y: minY, z: 1 };
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+                    const startPosX = cur.x;
+                    const startPosY = cur.y;
+
+                    state.pantryPlayZ = (state.pantryPlayZ || 1) + 1;
+                    cur.z = state.pantryPlayZ;
+                    state.pantryPlayPositions[key] = cur;
+                    el.style.zIndex = String(cur.z);
+
+                    const move = (ev) => {
+                        ev.preventDefault();
+                        const dx = ev.clientX - startX;
+                        const dy = ev.clientY - startY;
+                        const nx = clamp(startPosX + dx, minX, maxX);
+                        const ny = clamp(startPosY + dy, minY, maxY);
+                        state.pantryPlayPositions[key] = { ...cur, x: nx, y: ny };
+                        el.style.left = `${nx - dims.bubbleW / 2}px`;
+                        el.style.top = `${ny - radius}px`;
+                    };
+
+                    const up = () => {
+                        document.removeEventListener('pointermove', move);
+                        document.removeEventListener('pointerup', up);
+                        document.removeEventListener('pointercancel', up);
+                        savePantryPlayPositions();
+                    };
+
+                    document.addEventListener('pointermove', move);
+                    document.addEventListener('pointerup', up);
+                    document.addEventListener('pointercancel', up);
+                };
+            });
         }
 
         function createPantryItemHTML(item, index, isUsed) {
@@ -1021,9 +2064,24 @@ async function processImage(input) {
             const icon = (item.customIcon && CONFIG.pantryIcons.includes(item.customIcon)) ? item.customIcon : CONFIG.pantryIcons[0];
             const color = item.customColor || '#94a3b8';
             const dLeft = state.expiryFeatureEnabled ? daysLeft(item.expiresAt) : null;
-            const expiryPill = (state.expiryFeatureEnabled && item.expiresAt)
-                ? `<span class="ml-2 px-2 py-1 rounded-lg text-[9px] font-900 uppercase tracking-widest ${dLeft<=0?'bg-rose-50 text-rose-500':dLeft<=3?'bg-amber-50 text-amber-700':'bg-slate-50 text-slate-400'}">${dLeft<=0?'Expired':`${dLeft}d`}</span>`
-                : ``;
+            
+            let expiryPill = '';
+            if (state.expiryFeatureEnabled && item.expiresAt) {
+                let pillClass = 'bg-slate-50 text-slate-400';
+                let label = `${dLeft}d`;
+                if (dLeft <= 0) {
+                    pillClass = 'bg-rose-50 text-rose-500';
+                    label = 'Expired';
+                } else if (dLeft === 1) {
+                    pillClass = 'border border-rose-200 bg-rose-50 text-rose-500 font-800';
+                    label = '1d';
+                } else if (dLeft <= 3) {
+                    pillClass = 'bg-amber-50 text-amber-700';
+                }
+                const isOneDay = (dLeft === 1);
+                expiryPill = `<span class="ml-2 px-2 py-1 rounded-lg text-[9px] tracking-widest ${isOneDay ? '' : 'font-900 uppercase'} ${pillClass}">${label}</span>`;
+            }
+
             return `
             <div class="swipe-container inner-stroke" data-idx="${index}">
                 <div class="swipe-action" onclick="event.stopPropagation(); deletePantryItem(${index})"><i data-lucide="trash-2" class="w-5 h-5"></i></div>
@@ -1034,13 +2092,12 @@ async function processImage(input) {
                                 <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: ${color}20; color: ${color}"><i data-lucide="${icon}" class="w-5 h-5"></i></div>
                                 <div>
                                     <h4 class="text-sm font-800 text-slate-900 flex items-center">${item.name}${expiryPill}</h4>
-                                    <p class="text-[9px] font-800 text-slate-300 uppercase tracking-widest">Left: ${item.qty}</p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2 bg-slate-50 rounded-xl p-1" onclick="event.stopPropagation()">
-                                <button onclick="updatePantryQty(${index}, -1)" class="w-8 h-8 flex items-center justify-center text-slate-400 btn-press"><i data-lucide="minus" class="w-4 h-4"></i></button>
+                            <div class="flex items-center gap-2" onclick="event.stopPropagation()">
+                                <button onclick="updatePantryQty(${index}, -1)" class="qty-btn qty-btn-minus"><i data-lucide="minus" class="w-3.5 h-3.5"></i></button>
                                 <span class="text-xs font-800 text-slate-900 w-6 text-center">${item.qty}</span>
-                                <button onclick="updatePantryQty(${index}, 1)" class="w-8 h-8 flex items-center justify-center text-theme btn-press"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                                <button onclick="updatePantryQty(${index}, 1)" class="w-6 h-6 flex items-center justify-center text-slate-300 btn-press"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
                             </div>
                         </div>
                         <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%; background: ${color}"></div></div>
@@ -1054,7 +2111,7 @@ async function processImage(input) {
             state.pantry[index].qty += delta;
             if (state.pantry[index].qty < 0) state.pantry[index].qty = 0;
             if (state.pantry[index].qty > state.pantry[index].max) state.pantry[index].max = state.pantry[index].qty;
-            saveToStorage(); renderPantry();
+            saveToStorage(); renderPantry(); if (state.pantryView === 'play') renderPantryPlay();
         }
 
         function openPantryEdit(index) {
@@ -1143,7 +2200,7 @@ async function processImage(input) {
                     item.expiresAt = null;
                 }
             }
-            saveToStorage(); closePantryEdit(); renderPantry();
+            saveToStorage(); closePantryEdit(); renderPantry(); if (state.pantryView === 'play') renderPantryPlay();
         }
         function closePantryEdit() { document.getElementById('pantry-edit-modal').classList.remove('active'); }
 
@@ -1168,10 +2225,14 @@ async function processImage(input) {
         function renderEditItems() {
             const container = document.getElementById('edit-stock-container');
             container.innerHTML = state.editingEntry.items.map((item, idx) => `
-                <div class="flex gap-2 items-center bg-slate-50 p-3 rounded-2xl">
-                    <input type="text" value="${item.name}" oninput="state.editingEntry.items[${idx}].name=this.value; checkForChanges()" class="flex-1 bg-transparent text-xs font-700 outline-none px-1 text-slate-700">
-                    <input type="text" value="${item.qty}" oninput="state.editingEntry.items[${idx}].qty=this.value; checkForChanges()" class="w-16 bg-transparent text-xs font-800 outline-none text-right px-1 border-l border-slate-200">
-                    <button onclick="state.editingEntry.items.splice(${idx},1); renderEditItems(); checkForChanges()" class="text-rose-300 pl-1"><i data-lucide="x" class="w-4 h-4"></i></button>
+                <div class="flex gap-3 items-center bg-slate-50 p-3 rounded-2xl inner-stroke">
+                    <button onclick="state.editingEntry.items.splice(${idx},1); renderEditItems(); checkForChanges()" class="text-slate-300"><i data-lucide="x" class="w-4 h-4"></i></button>
+                    <input type="text" value="${item.name}" oninput="state.editingEntry.items[${idx}].name=this.value; checkForChanges()" class="flex-1 bg-transparent text-xs font-700 outline-none text-slate-700">
+                    <div class="flex items-center gap-2">
+                        <button onclick="state.editingEntry.items[${idx}].qty=Math.max(1, (parseInt(state.editingEntry.items[${idx}].qty)||1)-1); renderEditItems(); checkForChanges()" class="qty-btn qty-btn-minus"><i data-lucide="minus" class="w-3.5 h-3.5"></i></button>
+                        <input type="number" value="${item.qty}" onkeydown="handleQtyKey(event)" oninput="state.editingEntry.items[${idx}].qty=this.value; checkForChanges()" class="w-8 bg-transparent text-xs font-800 outline-none text-center">
+                        <button onclick="state.editingEntry.items[${idx}].qty=(parseInt(state.editingEntry.items[${idx}].qty)||1)+1; renderEditItems(); checkForChanges()" class="qty-btn qty-btn-plus"><i data-lucide="plus" class="w-3.5 h-3.5"></i></button>
+                    </div>
                 </div>
             `).join('');
             lucide.createIcons();
@@ -1186,7 +2247,7 @@ async function processImage(input) {
             const isDiff = JSON.stringify(curObj) !== state.originalEntryJson;
             const btn = document.getElementById('save-edit-btn');
             if (isDiff) {
-                btn.innerText = "Save Changes";
+                btn.innerText = "Confirm";
                 btn.className = "flex-1 bg-theme text-white h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press shadow-theme";
             } else {
                 btn.innerText = "Back";
@@ -1198,15 +2259,25 @@ async function processImage(input) {
             if (document.getElementById('save-edit-btn').innerText === "Back") { closeEditModal(); return; }
             const oldE = JSON.parse(state.originalEntryJson);
             oldE.items.forEach(oi => { const t = state.pantry.find(p => p.name.toLowerCase() === oi.name.toLowerCase()); if(t) { t.qty -= (parseFloat(oi.qty) || 0); if(t.qty<0) t.qty=0;} });
+            state.editingEntry.eurVal = parseFloat(document.getElementById('edit-amount').value) || 0;
+            state.editingEntry.description = document.getElementById('edit-desc').value;
             state.editingEntry.items.forEach(ni => { 
                 const q = parseFloat(ni.qty) || 0;
                 const t = state.pantry.find(p => p.name.toLowerCase() === ni.name.toLowerCase());
                 if(t) { t.qty += q; t.max = Math.max(t.max, t.qty); }
-                else if(ni.name.trim()!=='') state.pantry.push({name:ni.name, qty:q, max:q, customIcon:CONFIG.pantryIcons[0], customColor:'#94a3b8'});
+                else if(ni.name.trim()!=='') {
+                    // Try to find default icon for this item
+                    let defIcon = CONFIG.pantryIcons[0];
+                    state.ingredientLibrary.forEach(cat => {
+                        const hasItem = (cat.groups || []).some(g => (g.items || []).some(i => i.toLowerCase() === ni.name.toLowerCase()));
+                        if (hasItem) defIcon = cat.icon || defIcon;
+                    });
+                    state.pantry.push({name:ni.name, qty:q, max:q, customIcon:defIcon, customColor:'#94a3b8', addedAt: Date.now()});
+                }
             });
             const idx = state.logs.findIndex(l => l.id === state.editingEntry.id);
             if(idx !== -1) {
-                state.logs[idx] = { ...state.editingEntry, eurVal: parseFloat(document.getElementById('edit-amount').value)||0, description: document.getElementById('edit-desc').value };
+                state.logs[idx] = JSON.parse(JSON.stringify(state.editingEntry));
                 saveToStorage(); closeEditModal(); renderRecent();
                 if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar();
                 if(!document.getElementById('tab-pantry').classList.contains('hidden')) renderPantry();
@@ -1280,6 +2351,89 @@ async function processImage(input) {
             lucide.createIcons();
         }
 
+        function setCalendarView(view) {
+            state.calendarView = view;
+            localStorage.setItem('pj_calendar_view', view);
+            renderCalendarView();
+        }
+
+        function toggleCalendarView() {
+            setCalendarView(state.calendarView === 'year' ? 'month' : 'year');
+        }
+
+        function renderCalendarView() {
+            const icon = document.getElementById('calendar-view-icon');
+            if (icon) {
+                icon.setAttribute('data-lucide', state.calendarView === 'year' ? 'calendar-range' : 'calendar-days');
+            }
+            document.getElementById('calendar-month-head')?.classList.toggle('hidden', state.calendarView === 'year');
+            document.getElementById('calendar-days')?.classList.toggle('hidden', state.calendarView === 'year');
+            document.getElementById('calendar-day-detail')?.classList.toggle('hidden', state.calendarView === 'year');
+            document.getElementById('year-calendar')?.classList.toggle('hidden', state.calendarView !== 'year');
+            if (state.calendarView === 'year') renderYearCalendar();
+            else renderCalendar();
+            lucide.createIcons();
+        }
+
+        function getHighlightHexForDate(dateString) {
+            const cats = new Set(state.logs.filter(l => l.dateString === dateString).map(l => l.category));
+            const highlightCat = CONFIG.categories.find(c => c.highlight && cats.has(c.name));
+            return highlightCat?.hex || null;
+        }
+
+        function renderYearCalendar() {
+            const wrap = document.getElementById('year-calendar');
+            if (!wrap) return;
+            const y = state.currentDate.getFullYear();
+            document.getElementById('current-month-label').innerText = `${y}`;
+            const symbol = state.currency === 'EUR' ? '€' : '¥';
+            const yearPrefix = `${y}-`;
+            const yTotalEur = state.logs.filter(l => l.dateString.startsWith(yearPrefix)).reduce((a,c) => a + c.eurVal, 0);
+            const yTotalDisplay = state.currency === 'EUR' ? yTotalEur : yTotalEur * CONFIG.rate;
+            document.getElementById('month-total-stat').innerText = `${symbol} ${yTotalDisplay.toFixed(2)}`;
+            const today = new Date();
+            const ty = today.getFullYear(), tm = today.getMonth() + 1, td = today.getDate();
+            const todayString = `${ty}-${String(tm).padStart(2,'0')}-${String(td).padStart(2,'0')}`;
+
+            const months = Array.from({ length: 12 }, (_, m) => m);
+            wrap.innerHTML = `
+                <div class="year-grid pb-4">
+                    ${months.map(m => {
+                        const first = (new Date(y, m, 1).getDay() + 6) % 7;
+                        const days = new Date(y, m + 1, 0).getDate();
+                        const cells = [];
+                        for (let i = 0; i < first; i++) cells.push('');
+                        for (let d = 1; d <= days; d++) cells.push(d);
+                        while (cells.length % 7 !== 0) cells.push('');
+
+                        const monthName = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(new Date(y, m, 1));
+                        const monthPrefix = `${y}-${String(m+1).padStart(2,'0')}`;
+                        const mTotalEur = state.logs.filter(l => l.dateString.startsWith(monthPrefix)).reduce((a,c) => a + c.eurVal, 0);
+                        const mTotalDisplay = state.currency === 'EUR' ? mTotalEur : mTotalEur * CONFIG.rate;
+                        return `
+                            <div class="year-month">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="text-[10px] font-900 text-slate-500 uppercase tracking-widest">${monthName}</div>
+                                    <div class="text-[10px] font-800 text-slate-900">${symbol}${mTotalDisplay.toFixed(0)}</div>
+                                </div>
+                                <div class="year-mini-grid">
+                                    ${cells.map(d => {
+                                        if (!d) return `<div class="h-4"></div>`;
+                                        const ds = `${y}-${String(m + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                                        const isToday = ds === todayString;
+                                        const hex = getHighlightHexForDate(ds);
+                                        const style = (!isToday && hex) ? `style="background:${hex}25; color:${hex};"` : '';
+                                        const cls = isToday ? 'year-day today' : (hex ? 'year-day hl' : 'year-day');
+                                        return `<button type="button" onclick="state.currentDate=new Date(${y},${m},1); state.selectedDate=new Date(${y},${m},${d}); setCalendarView('month')" class="${cls}" ${style}>${d}</button>`;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
         function renderCalendar() {
             const cal = document.getElementById('calendar-days');
             const y = state.currentDate.getFullYear(), m = state.currentDate.getMonth();
@@ -1296,8 +2450,17 @@ async function processImage(input) {
                 const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 const dl = state.logs.filter(l => l.dateString === ds);
                 const isSel = state.selectedDate.getFullYear() === y && state.selectedDate.getMonth() === m && state.selectedDate.getDate() === d;
-                const dots = dl.length ? `<div class="dots-container">${[...new Set(dl.map(l=>l.category))].slice(0,3).map(c=>`<div class="dot" style="background:${CONFIG.categories.find(cat=>cat.name===c)?.hex}"></div>`).join('')}</div>` : '';
-                cal.innerHTML += `<div onclick="state.selectedDate=new Date(${y},${m},${d}); renderCalendar()" class="day-cell ${isSel?'selected':''} ${dl.length?'has-items':''}"><span class="text-xs font-800">${d}</span>${dots}</div>`;
+                
+                // Highlight logic
+                let bgStyle = '';
+                const dayCats = [...new Set(dl.map(l=>l.category))];
+                const highlightCat = CONFIG.categories.find(c => c.highlight && dayCats.includes(c.name));
+                if (highlightCat) {
+                    bgStyle = `style="background: ${highlightCat.hex}15"`;
+                }
+
+                const dots = dl.length ? `<div class="dots-container">${dayCats.slice(0,3).map(c=>`<div class="dot" style="background:${CONFIG.categories.find(cat=>cat.name===c)?.hex}"></div>`).join('')}</div>` : '';
+                cal.innerHTML += `<div onclick="state.selectedDate=new Date(${y},${m},${d}); renderCalendar()" class="day-cell ${isSel?'selected':''} ${dl.length?'has-items':''}" ${bgStyle}><span class="text-xs font-800">${d}</span>${dots}</div>`;
             }
             renderDayDetail();
         }
@@ -1316,92 +2479,288 @@ async function processImage(input) {
             lucide.createIcons();
         }
 
-        document.getElementById('month-prev').onclick = () => { state.currentDate.setMonth(state.currentDate.getMonth() - 1); renderCalendar(); };
-        document.getElementById('month-next').onclick = () => { state.currentDate.setMonth(state.currentDate.getMonth() + 1); renderCalendar(); };
+        document.getElementById('month-prev').onclick = () => {
+            if (state.calendarView === 'year') state.currentDate.setFullYear(state.currentDate.getFullYear() - 1);
+            else state.currentDate.setMonth(state.currentDate.getMonth() - 1);
+            renderCalendarView();
+        };
+        document.getElementById('month-next').onclick = () => {
+            if (state.calendarView === 'year') state.currentDate.setFullYear(state.currentDate.getFullYear() + 1);
+            else state.currentDate.setMonth(state.currentDate.getMonth() + 1);
+            renderCalendarView();
+        };
 
         function renderCategorySettingsList() {
             const el = document.getElementById('category-settings-list');
             const editMode = !!state.categoryEditMode;
-            el.innerHTML = CONFIG.categories.map((cat, idx) => `
-                <div class="inner-stroke rounded-2xl p-4 flex items-center justify-between bg-white ${editMode ? 'select-none' : ''}"
-                     ${editMode ? `draggable="true" ondragstart="onCatDragStart(event, ${idx})" ondragover="onCatDragOver(event, ${idx})" ondrop="onCatDrop(event, ${idx})"` : `onclick="openCategoryEdit(${idx})"`}>
-                    <div class="flex items-center gap-3">
-                        ${editMode ? `
-                            <div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center cursor-grab active:cursor-grabbing" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
-                                <i data-lucide="grip-vertical" class="w-5 h-5"></i>
+            el.innerHTML = CONFIG.categories.map((cat, idx) => {
+                if (editMode) {
+                    return `
+                        <div data-cat-row="1" data-cat-id="${cat.id}" class="inner-stroke rounded-2xl p-4 bg-white flex items-center justify-between select-none">
+                            <div class="flex items-center gap-3">
+                                <div data-cat-handle="1" class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center cursor-grab active:cursor-grabbing drag-handle">
+                                    <i data-lucide="grip-vertical" class="w-5 h-5"></i>
+                                </div>
+                                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:${cat.hex}20; color:${cat.hex}">
+                                    <i data-lucide="${cat.icon}" class="w-5 h-5"></i>
+                                </div>
+                                <span class="text-sm font-800 text-slate-900">${cat.name}</span>
+                                ${cat.highlight ? `<span class="ml-2 px-2 py-1 rounded-lg text-[9px] tracking-widest font-800 pill-theme">Highlighted</span>` : ''}
                             </div>
-                        ` : ``}
-                        <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:${cat.hex}20; color:${cat.hex}">
-                            <i data-lucide="${cat.icon}" class="w-5 h-5"></i>
                         </div>
-                        <div>
-                            <div class="text-sm font-800 text-slate-900">${cat.name}</div>
-                            <div class="text-[10px] font-700 uppercase tracking-widest text-slate-300">${cat.id}</div>
+                    `;
+                }
+
+                return `
+                    <div class="inner-stroke rounded-2xl p-4 flex items-center justify-between bg-white">
+                        <div class="flex items-center gap-3">
+                            <div onclick="event.stopPropagation(); openCategoryEdit(${idx})" class="w-10 h-10 rounded-xl flex items-center justify-center btn-press" style="background:${cat.hex}20; color:${cat.hex}">
+                                <i data-lucide="${cat.icon}" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <input value="${cat.name}" onfocus="this.dataset.oldName=this.value" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.blur();}" onblur="commitCategoryRename(${idx}, this.value, this.dataset.oldName)" class="bg-slate-50 rounded-xl px-3 py-2 text-sm font-800 text-slate-800 outline-none">
+                                    ${cat.highlight ? `<span class="ml-2 px-2 py-1 rounded-lg text-[9px] tracking-widest font-800 pill-theme">Highlighted</span>` : ''}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    ${editMode ? `
-                        <button class="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center btn-press" onclick="event.stopPropagation(); deleteCategory(${idx})">
-                            <i data-lucide="trash-2" class="w-5 h-5"></i>
-                        </button>
-                    ` : `
-                        <div class="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center">
-                            <i data-lucide="chevron-right" class="w-5 h-5"></i>
-                        </div>
-                    `}
-                </div>
-            `).join('');
+                `;
+            }).join('');
             lucide.createIcons();
+            updateCategoryReorderUI();
+            if (state.categoryEditMode) setupCategoryTouchReorder();
+        }
+
+        function commitCategoryRename(idx, rawName, oldNameRaw) {
+            const cat = CONFIG.categories[idx];
+            if (!cat) return;
+            const oldName = (oldNameRaw || cat.name || '').trim();
+            const newName = (rawName || '').trim();
+            if (!newName) {
+                cat.name = oldName || cat.name;
+                renderCategories();
+                renderCategorySettingsList();
+                renderRecent();
+                if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar();
+                return;
+            }
+            if (newName === oldName) return;
+
+            cat.name = newName;
+            state.logs.forEach(l => { if (l.category === oldName) l.category = newName; });
+            if (state.selectedCategory === oldName) state.selectedCategory = newName;
+            saveToStorage();
+            saveCategoriesToStorage();
+            renderCategories();
+            renderCategorySettingsList();
+            renderRecent();
+            if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar();
         }
 
         function toggleCategoryEditMode() {
-            state.categoryEditMode = !state.categoryEditMode;
-            const actions = document.getElementById('cat-edit-actions');
-            const btn = document.getElementById('cat-edit-toggle');
             if (state.categoryEditMode) {
-                state.categoryDraftJson = JSON.stringify(CONFIG.categories.map(c => ({ id: c.id, name: c.name, hex: c.hex, icon: c.icon })));
-                actions?.classList.remove('hidden');
-                btn && (btn.innerHTML = `<i data-lucide="x" class="w-5 h-5"></i>`);
-            } else {
-                actions?.classList.add('hidden');
-                btn && (btn.innerHTML = `<i data-lucide="pencil" class="w-5 h-5"></i>`);
+                cancelCategoryReorder();
+                return;
             }
+            state.categoryEditMode = true;
+            state.categoryDraftJson = JSON.stringify(CONFIG.categories.map(c => c.id));
+            state.categoryDirty = false;
+            const addBtn = document.getElementById('add-cat-btn-main');
+            addBtn?.classList.add('hidden');
             renderCategorySettingsList();
         }
 
         function cancelCategoryReorder() {
             try {
-                const saved = JSON.parse(state.categoryDraftJson || '[]');
-                if (Array.isArray(saved) && saved.length) {
-                    CONFIG.categories = saved.map(c => ({
-                        id: String(c.id || ''),
-                        name: String(c.name || ''),
-                        hex: String(c.hex || '#94a3b8'),
-                        icon: String(c.icon || 'circle'),
-                        colorClass: '',
-                        textClass: ''
-                    })).filter(c => c.id && c.name);
+                const ids = JSON.parse(state.categoryDraftJson || '[]');
+                if (Array.isArray(ids) && ids.length) {
+                    const map = new Map(CONFIG.categories.map(c => [c.id, c]));
+                    const ordered = ids.map(id => map.get(id)).filter(Boolean);
+                    const rest = CONFIG.categories.filter(c => !ids.includes(c.id));
+                    CONFIG.categories = ordered.concat(rest);
                 }
             } catch(e) {}
             state.categoryEditMode = false;
-            document.getElementById('cat-edit-actions')?.classList.add('hidden');
-            const btn = document.getElementById('cat-edit-toggle');
-            btn && (btn.innerHTML = `<i data-lucide="pencil" class="w-5 h-5"></i>`);
+            state.categoryDirty = false;
+            
+            const addBtn = document.getElementById('add-cat-btn-main');
+            addBtn?.classList.remove('hidden');
+            
             renderCategories();
             renderCategorySettingsList();
             renderRecent();
             if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar();
+            lucide.createIcons();
         }
 
         function saveCategoryReorder() {
+            if (!state.categoryEditMode) return;
+            if (!state.categoryDirty) return;
             saveCategoriesToStorage();
             state.categoryEditMode = false;
-            document.getElementById('cat-edit-actions')?.classList.add('hidden');
-            const btn = document.getElementById('cat-edit-toggle');
-            btn && (btn.innerHTML = `<i data-lucide="pencil" class="w-5 h-5"></i>`);
+            state.categoryDirty = false;
+            
+            const addBtn = document.getElementById('add-cat-btn-main');
+            addBtn?.classList.remove('hidden');
+            
             renderCategories();
             renderCategorySettingsList();
             renderRecent();
             if(!document.getElementById('tab-calendar').classList.contains('hidden')) renderCalendar();
+            lucide.createIcons();
+        }
+
+        function updateCategoryReorderUI() {
+            const saveBtn = document.getElementById('cat-edit-save-btn');
+            const toggleBtn = document.getElementById('cat-edit-toggle');
+            if (!saveBtn || !toggleBtn) return;
+
+            if (!state.categoryEditMode) {
+                saveBtn.classList.add('hidden');
+                saveBtn.disabled = true;
+                saveBtn.className = "w-10 h-10 rounded-2xl bg-slate-100 text-slate-300 flex items-center justify-center btn-press hidden";
+                toggleBtn.innerHTML = `<i data-lucide="move" class="w-5 h-5"></i>`;
+                toggleBtn.className = "w-10 h-10 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center btn-press";
+                lucide.createIcons();
+                return;
+            }
+
+            saveBtn.classList.remove('hidden');
+            toggleBtn.innerHTML = `<i data-lucide="x" class="w-5 h-5"></i>`;
+            toggleBtn.className = "w-10 h-10 rounded-2xl bg-slate-50 text-slate-400 flex items-center justify-center btn-press";
+
+            if (state.categoryDirty) {
+                saveBtn.disabled = false;
+                saveBtn.className = "w-10 h-10 rounded-2xl bg-theme text-white flex items-center justify-center btn-press";
+            } else {
+                saveBtn.disabled = true;
+                saveBtn.className = "w-10 h-10 rounded-2xl bg-slate-100 text-slate-300 flex items-center justify-center btn-press";
+            }
+            lucide.createIcons();
+        }
+
+        function setupCategoryTouchReorder() {
+            const wrap = document.getElementById('category-settings-list');
+            if (!wrap) return;
+            const handles = wrap.querySelectorAll('[data-cat-handle="1"]');
+            handles.forEach(h => {
+                h.onpointerdown = (e) => {
+                    if (!state.categoryEditMode) return;
+                    e.preventDefault();
+                    const row = h.closest('[data-cat-row="1"]');
+                    if (!row) return;
+                    const rect = row.getBoundingClientRect();
+                    const placeholder = document.createElement('div');
+                    placeholder.style.height = `${rect.height}px`;
+                    placeholder.className = "inner-stroke rounded-2xl bg-slate-50";
+                    row.parentNode.insertBefore(placeholder, row.nextSibling);
+
+                    const startY = e.clientY;
+                    const startTop = rect.top;
+                    const startLeft = rect.left;
+                    const startWidth = rect.width;
+
+                    row.classList.add('dragging-fixed');
+                    row.style.top = `${startTop}px`;
+                    row.style.left = `${startLeft}px`;
+                    row.style.width = `${startWidth}px`;
+                    row.style.height = `${rect.height}px`;
+
+                    const move = (ev) => {
+                        ev.preventDefault();
+                        const dy = ev.clientY - startY;
+                        row.style.top = `${startTop + dy}px`;
+                        const elAt = document.elementFromPoint(ev.clientX, ev.clientY);
+                        const over = elAt ? elAt.closest('[data-cat-row="1"]') : null;
+                        if (!over || over === row) return;
+                        const overRect = over.getBoundingClientRect();
+                        if (ev.clientY < overRect.top + overRect.height / 2) {
+                            over.parentNode.insertBefore(placeholder, over);
+                        } else {
+                            over.parentNode.insertBefore(placeholder, over.nextSibling);
+                        }
+                    };
+
+                    const up = () => {
+                        document.removeEventListener('pointermove', move);
+                        document.removeEventListener('pointerup', up);
+                        document.removeEventListener('pointercancel', up);
+
+                        row.classList.remove('dragging-fixed');
+                        row.style.top = '';
+                        row.style.left = '';
+                        row.style.width = '';
+                        row.style.height = '';
+
+                        placeholder.parentNode.insertBefore(row, placeholder);
+                        placeholder.remove();
+
+                        const ids = Array.from(wrap.querySelectorAll('[data-cat-row="1"]')).map(n => n.dataset.catId).filter(Boolean);
+                        const map = new Map(CONFIG.categories.map(c => [c.id, c]));
+                        const ordered = ids.map(id => map.get(id)).filter(Boolean);
+                        const rest = CONFIG.categories.filter(c => !ids.includes(c.id));
+                        CONFIG.categories = ordered.concat(rest);
+
+                        state.categoryDirty = JSON.stringify(ids) !== state.categoryDraftJson;
+                        updateCategoryReorderUI();
+                    };
+
+                    document.addEventListener('pointermove', move);
+                    document.addEventListener('pointerup', up);
+                    document.addEventListener('pointercancel', up);
+                };
+            });
+        }
+
+        function openCategoryCreate() {
+            state.categoryModalMode = 'category';
+            state.categoryEditingIdx = null; // null means create mode
+            state.catTempIcon = 'circle';
+            state.catTempHex = '#94a3b8';
+            state.catTempHighlight = false;
+            state.catIconsExpanded = false;
+            
+            // Ensure fields are visible
+            document.getElementById('cat-edit-name-wrap')?.classList.remove('hidden');
+            document.getElementById('cat-color-wrap')?.classList.remove('hidden');
+            document.getElementById('cat-highlight-wrap')?.classList.remove('hidden');
+            document.getElementById('cat-delete-btn')?.classList.add('hidden');
+            
+            const title = document.querySelector('#category-edit-modal .label-style');
+            if (title) title.innerText = 'New Category';
+            
+            document.getElementById('cat-edit-name').value = '';
+            state.originalCatJson = JSON.stringify({ name: '', icon: state.catTempIcon, hex: state.catTempHex, highlight: state.catTempHighlight });
+            
+            const saveBtn = document.getElementById('save-cat-btn');
+            saveBtn.innerText = 'Back';
+            saveBtn.className = "flex-1 bg-slate-100 text-slate-400 h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press";
+            if (saveBtn) saveBtn.onclick = saveCategoryEdit;
+            
+            updateCatHighlightUI();
+            renderCategoryIconGrid();
+            renderCategoryColorGrid();
+            checkCategoryChanges();
+            document.getElementById('category-edit-modal').classList.add('active');
+        }
+
+        function toggleCatHighlight() {
+            state.catTempHighlight = !state.catTempHighlight;
+            updateCatHighlightUI();
+            checkCategoryChanges();
+        }
+
+        function updateCatHighlightUI() {
+            const btn = document.getElementById('cat-highlight-btn');
+            if (!btn) return;
+            if (state.catTempHighlight) {
+                btn.innerText = "On";
+                btn.className = "px-4 py-2 rounded-xl bg-theme text-white text-[10px] font-900 uppercase tracking-widest shadow-theme btn-press";
+            } else {
+                btn.innerText = "Off";
+                btn.className = "px-4 py-2 rounded-xl bg-slate-200 text-slate-500 text-[10px] font-900 uppercase tracking-widest btn-press";
+            }
         }
 
         function onCatDragStart(e, idx) {
@@ -1440,20 +2799,60 @@ async function processImage(input) {
         }
 
         function openCategoryEdit(idx) {
+            state.categoryModalMode = 'category';
             state.categoryEditingIdx = idx;
             const cat = CONFIG.categories[idx];
             state.catTempIcon = cat.icon || 'circle';
             state.catTempHex = cat.hex || '#94a3b8';
+            state.catTempHighlight = !!cat.highlight;
             state.catIconsExpanded = false;
+            
+            // Ensure fields are visible
+            document.getElementById('cat-edit-name-wrap')?.classList.remove('hidden');
+            document.getElementById('cat-color-wrap')?.classList.remove('hidden');
+            document.getElementById('cat-highlight-wrap')?.classList.remove('hidden');
+            document.getElementById('cat-delete-btn')?.classList.remove('hidden');
+            document.getElementById('cat-delete-btn').onclick = () => {
+                showConfirm(
+                    'Delete Category?',
+                    `This will remove "${CONFIG.categories[idx]?.name || 'Category'}".`,
+                    () => { deleteCategory(idx); closeCategoryEdit(); }
+                );
+            };
+            
+            const title = document.querySelector('#category-edit-modal .label-style');
+            if (title) title.innerText = 'Category Settings';
+            
             document.getElementById('cat-edit-name').value = cat.name;
-            state.originalCatJson = JSON.stringify({ name: cat.name, icon: state.catTempIcon, hex: state.catTempHex });
+            state.originalCatJson = JSON.stringify({ name: cat.name, icon: state.catTempIcon, hex: state.catTempHex, highlight: state.catTempHighlight });
+            
+            const saveBtn = document.getElementById('save-cat-btn');
+            saveBtn.innerText = 'Back';
+            saveBtn.className = "flex-1 bg-slate-100 text-slate-400 h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press";
+            if (saveBtn) saveBtn.onclick = saveCategoryEdit;
+            
+            updateCatHighlightUI();
             renderCategoryIconGrid();
             renderCategoryColorGrid();
             checkCategoryChanges();
             document.getElementById('category-edit-modal').classList.add('active');
         }
 
-        function closeCategoryEdit() { document.getElementById('category-edit-modal').classList.remove('active'); }
+        function closeCategoryEdit() { 
+            state.categoryModalMode = 'category';
+            document.getElementById('cat-edit-name-wrap')?.classList.remove('hidden');
+            document.getElementById('cat-color-wrap')?.classList.remove('hidden');
+            document.getElementById('cat-highlight-wrap')?.classList.remove('hidden');
+            const title = document.querySelector('#category-edit-modal .label-style');
+            if (title) title.innerText = 'Edit Category';
+            const nameInput = document.getElementById('cat-edit-name');
+            if (nameInput) nameInput.oninput = checkCategoryChanges;
+            const delBtn = document.getElementById('cat-delete-btn');
+            if (delBtn) delBtn.onclick = () => { deleteCategory(state.categoryEditingIdx); closeCategoryEdit(); };
+            const saveBtn = document.getElementById('save-cat-btn');
+            if (saveBtn) saveBtn.onclick = saveCategoryEdit;
+            document.getElementById('category-edit-modal').classList.remove('active'); 
+        }
 
         function renderCategoryIconGrid() {
             const grid = document.getElementById('cat-icon-grid');
@@ -1478,11 +2877,26 @@ async function processImage(input) {
         }
 
         function checkCategoryChanges() {
-            const currentObj = { name: document.getElementById('cat-edit-name').value, icon: state.catTempIcon, hex: state.catTempHex };
+            if (state.categoryModalMode === 'iconPicker') return;
+            if (state.categoryModalMode === 'group') {
+                const btn = document.getElementById('save-cat-btn');
+                const name = document.getElementById('cat-edit-name')?.value || '';
+                const currentObj = { name: name.trim(), icon: state.catTempIcon };
+                if (JSON.stringify(currentObj) !== state.originalGroupJson) {
+                    btn.innerText = "Confirm";
+                    btn.className = "flex-1 bg-theme text-white h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press shadow-theme";
+                } else {
+                    btn.innerText = "Back";
+                    btn.className = "flex-1 bg-slate-100 text-slate-400 h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press";
+                }
+                return;
+            }
+            const currentObj = { name: document.getElementById('cat-edit-name').value, icon: state.catTempIcon, hex: state.catTempHex, highlight: state.catTempHighlight };
             const btn = document.getElementById('save-cat-btn');
+            const isCreate = state.categoryEditingIdx === null;
             if (JSON.stringify(currentObj) !== state.originalCatJson) {
-                btn.innerText = "Save Changes";
-                btn.className = "flex-1 bg-theme text-white h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press";
+                btn.innerText = isCreate ? "Create" : "Confirm";
+                btn.className = "flex-1 bg-theme text-white h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press shadow-theme";
             } else {
                 btn.innerText = "Back";
                 btn.className = "flex-1 bg-slate-100 text-slate-400 h-14 rounded-2xl text-[12px] font-800 uppercase tracking-[0.2em] btn-press";
@@ -1492,19 +2906,28 @@ async function processImage(input) {
         function saveCategoryEdit() {
             if (document.getElementById('save-cat-btn').innerText === "Back") { closeCategoryEdit(); return; }
             const idx = state.categoryEditingIdx;
-            if (idx == null) return;
-            const cat = CONFIG.categories[idx];
-            const oldName = cat.name;
-            const newName = document.getElementById('cat-edit-name').value.trim() || oldName;
-            cat.name = newName;
-            cat.icon = state.catTempIcon;
-            cat.hex = state.catTempHex;
+            const newName = document.getElementById('cat-edit-name').value.trim();
+            if (!newName) return;
 
-            // Keep existing logs consistent when renaming a category.
-            if (oldName !== newName) {
-                state.logs.forEach(l => { if (l.category === oldName) l.category = newName; });
-                if (state.selectedCategory === oldName) state.selectedCategory = newName;
-                saveToStorage();
+            if (idx === null) {
+                // Create Mode
+                const baseId = `cat${Date.now().toString().slice(-5)}`;
+                CONFIG.categories.push({ id: baseId, name: newName, hex: state.catTempHex, icon: state.catTempIcon, highlight: state.catTempHighlight, colorClass: '', textClass: '' });
+            } else {
+                // Edit Mode
+                const cat = CONFIG.categories[idx];
+                const oldName = cat.name;
+                cat.name = newName;
+                cat.icon = state.catTempIcon;
+                cat.hex = state.catTempHex;
+                cat.highlight = state.catTempHighlight;
+
+                // Keep existing logs consistent when renaming a category.
+                if (oldName !== newName) {
+                    state.logs.forEach(l => { if (l.category === oldName) l.category = newName; });
+                    if (state.selectedCategory === oldName) state.selectedCategory = newName;
+                    saveToStorage();
+                }
             }
 
             saveCategoriesToStorage();
@@ -1517,6 +2940,7 @@ async function processImage(input) {
 
         window.onload = () => {
             loadCategoriesFromStorage();
+            loadIngredientLibrary();
             // Ensure selectedCategory still exists after edits
             if (!CONFIG.categories.some(c => c.name === state.selectedCategory)) {
                 state.selectedCategory = CONFIG.categories[0]?.name || 'Food';
@@ -1529,10 +2953,14 @@ async function processImage(input) {
             setCurrency(state.currency);
             lucide.createIcons();
             updateExpiryFeatureUI();
+            updatePantryViewUI();
+            renderCalendarView();
             const sortBtn = document.getElementById('pantry-sort-btn');
             if (sortBtn) sortBtn.innerText = (state.pantrySort === 'expiry') ? 'Expiry' : 'Added';
             const searchEl = document.getElementById('pantry-search');
             if (searchEl) searchEl.value = state.pantrySearch || '';
+            renderIngredientDatalist();
+            renderIngredientLibraryManageInline();
 
             // Auth init
             if (isFirebaseConfigured()) {
